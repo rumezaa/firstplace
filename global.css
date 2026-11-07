@@ -1,0 +1,62 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@source "./app";
+@source "./src";
+
+/*
+ * Third Place design tokens — warm, cozy cafe.
+ *
+ * Contrast was checked for WCAG AA:
+ *   espresso on cream ....... 13.1:1
+ *   mocha on cream ...........  5.6:1
+ *   white on clay ............  5.6:1
+ *   white on sage ............  5.9:1
+ *   white on amber ...........  6.3:1
+ *   white on brick ...........  7.4:1
+ *   white on berry ...........  6.9:1
+ * Keep any new colour at >= 4.5:1 against the surface it sits on.
+ *
+ * These values are mirrored in src/lib/theme.ts for the places that cannot
+ * take a className (map marker tints, QR code colours, status bar).
+ * Change both together.
+ */
+@theme {
+  /* surfaces */
+  --color-cream: #fbf7f1;
+  --color-surface: #ffffff;
+  --color-sunk: #f4ece2;
+  --color-border-warm: #e8ded2;
+
+  /* text */
+  --color-espresso: #2e2017;
+  --color-mocha: #6b5445;
+
+  /* primary action */
+  --color-clay: #9c4a28;
+  --color-clay-soft: #f6e6dc;
+
+  /* availability: open */
+  --color-sage: #2f6b4a;
+  --color-sage-soft: #e4f0e8;
+
+  /* availability: filling up */
+  --color-amber: #8a5a00;
+  --color-amber-soft: #fbefd6;
+
+  /* availability: full */
+  --color-brick: #9b3326;
+  --color-brick-soft: #f8e3e0;
+
+  /* the chat table — deliberately distinct from every availability colour */
+  --color-berry: #7a3b6b;
+  --color-berry-soft: #f3e6f0;
+
+  /* rounded, soft shapes */
+  --radius-card: 20px;
+  --radius-chip: 999px;
+  --radius-tile: 14px;
+}

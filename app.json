@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Third Place",
+    "slug": "thirdplace",
+    "scheme": "thirdplace",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "bundleIdentifier": "com.thirdplace.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Third Place uses the camera to scan the QR code at a cafe so you can check in to a table."
+      }
+    },
+    "android": {
+      "package": "com.thirdplace.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FBF7F1",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Third Place uses the camera to scan the QR code at a cafe so you can check in to a table."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FBF7F1"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

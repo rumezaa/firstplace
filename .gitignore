@@ -48,3 +48,4 @@ yarn-error.*
 
 # Public CA certificate for Tiger Cloud (not a secret)
 !server/certs/timescale-ca.pem
+.superpowers/

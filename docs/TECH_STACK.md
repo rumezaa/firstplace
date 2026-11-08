@@ -84,8 +84,15 @@ If the server forgets a filter, the database still refuses.
 | Venue vibe | busy hours, crowd tags, open-to-chat count, venue info | a 2-sentence "what it's like inside right now" |
 | Conversation openers | shared interests and the venue, **after mutual acceptance only** | 3 opener ideas |
 | Owner tip | the dashboard aggregates | one practical tip, e.g. "Tuesdays 2–4pm are quiet: try a study-hour deal" |
+| Meetup invitation | the finished plan: activity, venue, day, forecast, shared interests | one warm, low-pressure line to send |
 
 Rate-limited per user, with responses cached in the database.
+
+Note the direction of travel on the meetup planner: Gemini is handed a plan that
+has already been decided and only writes the covering sentence. It does not pick
+the activity, the day or the venue, so it cannot invent a cafe or promise
+sunshine, and no key (or an outage) costs one sentence rather than the feature.
+See [MEETUP_PLANNER.md](MEETUP_PLANNER.md) for why it is built that way.
 
 ## 7. Hardware: the chat-table light
 
@@ -119,6 +126,22 @@ The app makes about 15 Supabase calls today, all in `src/lib/*`. Each becomes on
 | `auth.*` | Auth0 in `SessionProvider` | — |
 | new | `GET /venues/:id/vibe`, `GET /familiar-faces/:id/openers`, `GET /dashboard/:venueId/insight` | varies |
 | new | `GET /hw/tables/:tableId/state` | device key |
+
+The meetup planner (`db/migrations/100_meetups.sql`, `server/src/routes/meetups.ts`)
+adds the second-meeting flow. Every endpoint is login-only and scoped to the two
+people in the connection:
+
+| Endpoint | What it does |
+|---|---|
+| `POST /connections/:id/meetup` | start, or resume, planning with a connection |
+| `GET /meetups/:id` | the planning screen: shared interests, the handshake state, and the forecast |
+| `POST /meetups/:id/availability` | replace my own free windows (day + morning/afternoon/evening) |
+| `GET /meetups/:id/overlap` | the windows you BOTH picked — empty until both have answered |
+| `POST /meetups/:id/plan` | rank ideas against the overlap and the forecast, store the proposal |
+| `POST /meetups/:id/respond` | yes or no; confirms only on a mutual yes |
+| `POST /meetups/:id/cancel` | call it off |
+| `GET /me/meetups` | my plans and their status |
+| `GET /forecast` | the part-of-day forecast (Open-Meteo, no API key) |
 
 ## 9. Repo layout after the change
 

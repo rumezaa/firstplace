@@ -6,9 +6,9 @@
     python3 server/scripts/demo_floor.py --api http://172.20.10.4:8787
 
 TFDL floor 3 (16 tables, needs migrations 150 and 190): 7 students seated,
-4 green and 3 red; the other 9 seats are free and show yellow. Priya is green at 354 · Window,
-where the physical box sits. The demo account (Alex) stays free to walk in, tap
-the tag and join.
+4 green and 3 red; the other 9 seats are free and show yellow. 354 · Window, the
+table with the physical box, is never seated by this script: it's for a real
+person on their own phone, so the demo conversation is with someone real.
 """
 import json
 import sys
@@ -22,7 +22,9 @@ if '--api' in sys.argv:
 VENUE = 'c0ffee00-0000-4000-8000-0000000000f3'
 T = 'f3f3f3f3-0000-4000-8000-0000000000'
 SEATS = [  # (student, table, light). Seated people are green or red; every empty seat shows yellow (free).
-    ('priya', T + '01', 'green'),   # 354 · Window: the physical box
+    ('priya', T + '03', 'green'),   # 354 · South
+    # 354 · Window (T + '01', the physical box) is left free for REAL people:
+    # someone sits there from their own phone and you connect with them.
     ('jordan', T + '04', 'red'),    # 352 · Corner
     ('chloe', T + '07', 'green'),   # 351 · North lounge
     ('dev',   T + '09', 'green'),   # 340 · Centre

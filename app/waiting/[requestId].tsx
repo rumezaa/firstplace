@@ -1,92 +1,48 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { fetchRequestStatus } from '@/lib/conversations';
-import { colors } from '@/lib/theme';
-import { fetchVenueLive, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
-import { Body, Screen, Title } from '@/components/ui';
+import { Body, Button, Card, Loading, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
- * After "Send request" (design kit v2, 4.6 / 4.7). Pending → a small spinner
- * and plain text. "Not available right now" covers a decline AND no answer,
- * so a no is never obvious, and it always offers somewhere else to go.
+ * After "Request to chat". The answer is one of: pending, accepted, or "not
+ * available right now" — which covers a decline AND no answer, so a no is
+ * never obvious.
  */
 export default function Waiting() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const router = useRouter();
   const status = useAsync(() => fetchRequestStatus(requestId), [requestId]);
   const reload = useCallback(() => void status.reload(), [status]);
-  const pending = status.data?.status === 'pending' || !status.data;
-  useVenueTablesRealtime(null, reload, pending);
+  useVenueTablesRealtime(null, reload, status.data?.status === 'pending' || !status.data);
 
   useEffect(() => {
     if (status.data?.status === 'accepted') router.replace('/conversation');
   }, [status.data, router]);
 
-  if (status.data?.status === 'not_available') {
-    return (
-      <Screen>
-        <Stack.Screen options={{ title: '' }} />
-        <Title>Not available right now</Title>
-        <Body>That&apos;s normal, and it isn&apos;t about you. These places have people open to talk:</Body>
-        <OpenNearby onPick={(venueId) => router.replace(`/venue/${venueId}`)} />
-      </Screen>
-    );
-  }
-
   return (
     <Screen>
-      <Stack.Screen options={{ title: '' }} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 }}>
-        <ActivityIndicator color={colors.mocha} />
-        <Text style={{ fontSize: 15, color: colors.mocha }}>Waiting for an answer</Text>
-      </View>
-      <Title>Request sent</Title>
-      <Body>Stay where you are. If they say yes, you&apos;ll go straight to the conversation.</Body>
+      <Stack.Screen options={{ title: 'Request sent' }} />
+      {status.data?.status === 'not_available' ? (
+        <>
+          <Title>Not available right now</Title>
+          <Card className="gap-2">
+            <Body>That happens, and it isn&apos;t about you. Another table might be open to talk.</Body>
+          </Card>
+          <Button label="Back to the map" onPress={() => router.replace('/')} />
+        </>
+      ) : (
+        <>
+          <Title>Request sent</Title>
+          <Card className="gap-3">
+            <SectionTitle>Waiting for a yes</SectionTitle>
+            <Body>Stay where you are. If they accept, you&apos;ll be told to come over.</Body>
+            <Loading label="Usually under 2 minutes" />
+          </Card>
+        </>
+      )}
     </Screen>
-  );
-}
-
-/** Venues with at least one person open to talk, most first. */
-function OpenNearby({ onPick }: { onPick: (venueId: string) => void }) {
-  const venues = useAsync(fetchVenues, []);
-  const live = useAsync(fetchVenueLive, []);
-  const open = (venues.data ?? [])
-    .map((v) => ({ v, n: live.data?.[v.id]?.people_open_to_chat ?? 0 }))
-    .filter((x) => x.n > 0)
-    .sort((a, b) => b.n - a.n)
-    .slice(0, 4);
-
-  if (open.length === 0) {
-    return <Body>Nobody else is open right now. Try again a little later.</Body>;
-  }
-
-  return (
-    <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden', marginTop: 8 }}>
-      {open.map(({ v, n }, i) => (
-        <View key={v.id}>
-          {i > 0 ? <View style={{ height: 1, backgroundColor: colors.border, marginLeft: 16 }} /> : null}
-          <Pressable
-            onPress={() => onPick(v.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`${v.name}, ${n} open to talk`}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingHorizontal: 16 }}
-          >
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.go }} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ fontSize: 17, color: colors.espresso }}>{v.name}</Text>
-              <Text style={{ fontSize: 13, color: colors.mocha }}>
-                {n} {n === 1 ? 'person' : 'people'} open to talk
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mocha} />
-          </Pressable>
-        </View>
-      ))}
-    </View>
   );
 }

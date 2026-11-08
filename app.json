@@ -18,7 +18,7 @@
     "android": {
       "package": "com.firstplace.app",
       "adaptiveIcon": {
-        "backgroundColor": "#131516",
+        "backgroundColor": "#FBF7F1",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -47,8 +47,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF",
-          "imageWidth": 96
+          "backgroundColor": "#FBF7F1"
         }
       ]
     ],

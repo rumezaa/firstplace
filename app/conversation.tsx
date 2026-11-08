@@ -1,9 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
 import { errorMessage } from '@/lib/api';
-import { colors } from '@/lib/theme';
 import {
   REPORT_REASONS,
   blockUser,
@@ -59,12 +58,7 @@ export default function ConversationScreen() {
       {reporting ? (
         <ReportForm conversationId={c.id} onDone={() => { setReporting(false); router.replace('/'); }} onCancel={() => setReporting(false)} />
       ) : ended ? (
-        <Vote
-          conversation={c}
-          onVoted={() => (endedId === c.id ? reload() : setEndedId(c.id))}
-          onDone={() => router.replace('/')}
-          onReport={() => setReporting(true)}
-        />
+        <Vote conversation={c} onVoted={() => (endedId === c.id ? reload() : setEndedId(c.id))} onDone={() => router.replace('/')} />
       ) : (
         <Live conversation={c} onError={setError} onEnded={reload} onReport={() => setReporting(true)} />
       )}
@@ -111,83 +105,55 @@ function Live({
 
   return (
     <>
-      <View style={{ gap: 6 }}>
-        <Text style={{ fontSize: 15, color: colors.mocha }}>Talking with {c.their_first_name ?? 'someone new'}</Text>
-        <Text
-          accessibilityLabel={left ? `${left.label} left` : 'No timer'}
-          style={{
-            fontSize: 48,
-            lineHeight: 52,
-            fontWeight: '600',
-            letterSpacing: -1.4,
-            fontVariant: ['tabular-nums'],
-            color: nearEnd ? colors.amber : colors.espresso,
-          }}
-        >
-          {left ? left.label : 'No timer'}
-        </Text>
-      </View>
-
-      {shared.length || c.shared.languages.length ? (
-        <View className="flex-row flex-wrap gap-2">
-          {[...new Set([...shared, ...c.shared.languages])].map((s) => <Chip key={s} label={s} />)}
-        </View>
-      ) : null}
-
-      <SectionTitle className="mt-4 text-[15px]">Things to ask</SectionTitle>
-      <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
-        {topics.data ? (
-          topics.data.prompts.map((p, i) => (
-            <View key={p}>
-              {i > 0 ? <View style={{ height: 1, backgroundColor: colors.border, marginLeft: 16 }} /> : null}
-              <Text style={{ fontSize: 16, lineHeight: 22, color: colors.espresso, paddingHorizontal: 16, paddingVertical: 14 }}>{p}</Text>
-            </View>
-          ))
+      <View className="gap-1">
+        <Title>You&apos;re talking with {c.their_first_name ?? 'someone new'}</Title>
+        {left ? (
+          <Caption>{left.label} left</Caption>
         ) : (
-          <Loading label="Finding things to ask" />
+          <Caption>No timer. End whenever you like.</Caption>
         )}
       </View>
-      <Caption className="px-1">Your table shows red while you talk, so nobody else walks over.</Caption>
 
-      {nearEnd ? (
-        <Card className="mt-2 gap-3">
-          <SectionTitle className="text-[22px] leading-[28px] font-bold">Keep talking?</SectionTitle>
-          <Body>You&apos;ll only continue if you both say yes. Neither of you sees the other&apos;s answer.</Body>
-          <Button label="15 more minutes" busy={busy === 'ext'} onPress={() => run('ext', () => voteExtend(true))} />
-          <Button label="Wrap up" variant="quiet" busy={busy === 'wrap'} onPress={() => run('wrap', () => voteExtend(false))} />
-          {c.my_extend === true ? <Caption>You chose to keep going. Waiting for them.</Caption> : null}
+      {shared.length ? (
+        <Card className="gap-3">
+          <SectionTitle>You both like</SectionTitle>
+          <View className="flex-row flex-wrap gap-2">
+            {[...new Set(shared)].map((s) => <Chip key={s} label={s} />)}
+          </View>
+          {c.shared.languages.length ? <Caption>You both speak {c.shared.languages.join(', ')}.</Caption> : null}
         </Card>
       ) : null}
 
-      <View className="mt-4 gap-2">
-        <Button label="End conversation" variant="quiet" busy={busy === 'end'} onPress={() => run('end', endConversation)} />
-        <Pressable onPress={onReport} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 17, fontWeight: '500', color: colors.brick }}>Report or block</Text>
-        </Pressable>
-      </View>
+      <Card accent="clay" className="gap-2">
+        <SectionTitle>Things to talk about</SectionTitle>
+        {topics.data ? (
+          topics.data.prompts.map((p) => <Body key={p}>• {p}</Body>)
+        ) : (
+          <Loading label="Finding conversation starters" />
+        )}
+      </Card>
+
+      {nearEnd ? (
+        <Card accent="amber" className="gap-3">
+          <SectionTitle>{left && left.ms === 0 ? "Time's up" : 'Two minutes left'}</SectionTitle>
+          <Body>Keep going? You only continue if you both choose to.</Body>
+          <View className="flex-row gap-2">
+            <Button className="flex-1" label="Extend 15 min" busy={busy === 'ext'} onPress={() => run('ext', () => voteExtend(true))} />
+            <Button className="flex-1" label="Wrap up" variant="quiet" busy={busy === 'wrap'} onPress={() => run('wrap', () => voteExtend(false))} />
+          </View>
+          {c.my_extend === true ? <Caption>You chose to extend. Waiting for them.</Caption> : null}
+        </Card>
+      ) : null}
+
+      <Button label="End conversation" variant="quiet" busy={busy === 'end'} onPress={() => run('end', endConversation)} />
+      <Button label="Report or block" variant="danger" onPress={onReport} />
     </>
   );
 }
 
 /* ----------------------------------------------------------------- vote --- */
 
-function Vote({
-  conversation: c,
-  onVoted,
-  onDone,
-  onReport,
-}: {
-  conversation: Conversation;
-  onVoted: () => void;
-  onDone: () => void;
-  onReport: () => void;
-}) {
-  // Reporting stays available after a conversation ends, whatever the vote.
-  const reportLink = (
-    <Pressable onPress={onReport} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 17, fontWeight: '500', color: colors.brick }}>Report a problem</Text>
-    </Pressable>
-  );
+function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation; onVoted: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function vote(v: 'good' | 'not_for_me') {
@@ -208,7 +174,6 @@ function Vote({
           <Body>You both said it was a good conversation. You&apos;ll find {c.their_first_name ?? 'them'} under Connections.</Body>
         </Card>
         <Button label="Done" onPress={onDone} />
-        {reportLink}
       </>
     );
   }
@@ -223,7 +188,6 @@ function Vote({
           </Body>
         </Card>
         <Button label="Done" onPress={onDone} />
-        {reportLink}
       </>
     );
   }
@@ -234,7 +198,6 @@ function Vote({
       <Body>Only you see your answer. Nobody is told how anyone voted.</Body>
       <Button label="Good conversation" busy={busy === 'good'} onPress={() => void vote('good')} />
       <Button label="Not for me" variant="quiet" busy={busy === 'not_for_me'} onPress={() => void vote('not_for_me')} />
-      {reportLink}
     </>
   );
 }

@@ -59,7 +59,6 @@ function RootNavigator() {
       <Stack.Screen name="waiting/[requestId]" options={{ title: 'Request sent' }} />
       <Stack.Screen name="conversation" options={{ title: 'In conversation' }} />
       <Stack.Screen name="box/[tableId]" options={{ headerShown: false }} />
-      <Stack.Screen name="rewards" options={{ title: '' }} />
       <Stack.Screen name="help" options={{ title: 'Help', presentation: 'modal' }} />
       <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
     </Stack>

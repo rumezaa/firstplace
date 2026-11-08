@@ -10,7 +10,6 @@ import {
   fetchTables,
   fetchVenue,
   fetchVenueLiveOne,
-  fetchVenueVibe,
 } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
@@ -37,8 +36,6 @@ export default function VenueScreen() {
   const tables = useAsync(() => fetchTables(venueId), [venueId]);
   const busy = useAsync(() => fetchBusyHours(venueId), [venueId]);
   const crowd = useAsync(() => fetchCrowdTags(venueId), [venueId]);
-  // Gemini line from live aggregates; falls back to the venue's own description.
-  const vibe = useAsync(() => fetchVenueVibe(venueId).catch(() => null), [venueId]);
 
   const refresh = useCallback(() => {
     void live.reload();
@@ -103,10 +100,10 @@ export default function VenueScreen() {
         <Badge label={v.type === 'study' ? 'Study space' : v.type === 'cafe' ? 'Cafe' : 'Social space'} />
       </View>
 
-      {vibe.data || v.vibe_summary ? (
+      {v.vibe_summary ? (
         <Card className="gap-2">
-          <SectionTitle>What it&apos;s like right now</SectionTitle>
-          <Body>{vibe.data ?? v.vibe_summary}</Body>
+          <SectionTitle>The vibe</SectionTitle>
+          <Body>{v.vibe_summary}</Body>
         </Card>
       ) : null}
 
@@ -186,11 +183,11 @@ export default function VenueScreen() {
       <Card className="gap-3">
         <SectionTitle>Going in?</SectionTitle>
         <Body>
-          Tap your phone on the box at any conversation table, or scan the code on its side. Green
-          means say hi; yellow means ask in the app.
+          Scan the QR code at the counter to claim a table. Pick the chat table if you would like
+          company.
         </Body>
         <Link href="/checkin" className="text-clay text-base font-semibold">
-          Find a table
+          Open the scanner
         </Link>
       </Card>
 

@@ -25,7 +25,7 @@ interface ScreenProps {
 export function Screen({ children, scroll = true, refreshControl, className }: ScreenProps) {
   const body = scroll ? (
     <ScrollView
-      contentContainerClassName="px-5 pb-16 pt-12 gap-4"
+      contentContainerClassName="px-5 pb-16 pt-2 gap-4"
       refreshControl={refreshControl}
       keyboardShouldPersistTaps="handled"
     >
@@ -44,7 +44,7 @@ export function Title({ children, className }: { children: ReactNode; className?
   return (
     <Text
       accessibilityRole="header"
-      className={`text-espresso text-[34px] leading-[41px] font-bold tracking-tight ${className ?? ''}`}
+      className={`text-espresso text-3xl font-bold tracking-tight ${className ?? ''}`}
     >
       {children}
     </Text>
@@ -55,7 +55,7 @@ export function SectionTitle({ children, className }: { children: ReactNode; cla
   return (
     <Text
       accessibilityRole="header"
-      className={`text-espresso text-[17px] leading-[22px] font-semibold ${className ?? ''}`}
+      className={`text-espresso text-lg font-semibold ${className ?? ''}`}
     >
       {children}
     </Text>
@@ -70,7 +70,7 @@ interface TextBlockProps {
 
 export function Body({ children, className, numberOfLines }: TextBlockProps) {
   return (
-    <Text numberOfLines={numberOfLines} className={`text-mocha text-[17px] leading-[23px] ${className ?? ''}`}>
+    <Text numberOfLines={numberOfLines} className={`text-mocha text-base leading-6 ${className ?? ''}`}>
       {children}
     </Text>
   );
@@ -78,7 +78,7 @@ export function Body({ children, className, numberOfLines }: TextBlockProps) {
 
 export function Caption({ children, className, numberOfLines }: TextBlockProps) {
   return (
-    <Text numberOfLines={numberOfLines} className={`text-mocha text-[13px] leading-[18px] ${className ?? ''}`}>
+    <Text numberOfLines={numberOfLines} className={`text-mocha text-sm leading-5 ${className ?? ''}`}>
       {children}
     </Text>
   );
@@ -86,16 +86,34 @@ export function Caption({ children, className, numberOfLines }: TextBlockProps) 
 
 /* -------------------------------------------------------------------- Card -- */
 
+const ACCENT_CLASS = {
+  clay: 'border-l-4 border-l-clay',
+  sage: 'border-l-4 border-l-sage',
+  amber: 'border-l-4 border-l-amber',
+  brick: 'border-l-4 border-l-brick',
+  berry: 'border-l-4 border-l-berry',
+} as const;
+
 export function Card({
   children,
   className,
+  accent,
 }: {
   children: ReactNode;
   className?: string;
-  /** Kept for compatibility. v2 cards have no coloured side stripe. */
+  /** A left edge stripe, for the chat table and similar call-outs. */
   accent?: 'clay' | 'sage' | 'amber' | 'brick' | 'berry';
 }) {
-  return <View className={`bg-surface rounded-card p-4 ${className ?? ''}`}>{children}</View>;
+  // Literal strings on purpose: Tailwind extracts class names statically, so a
+  // template-built `border-l-${accent}` would never be generated.
+  const accentClass = accent ? ACCENT_CLASS[accent] : '';
+  return (
+    <View
+      className={`bg-surface border-border-warm rounded-card border p-4 ${accentClass} ${className ?? ''}`}
+    >
+      {children}
+    </View>
+  );
 }
 
 /* ------------------------------------------------------------------ Button -- */
@@ -118,12 +136,12 @@ export function Button({
   const isDisabled = disabled || busy;
 
   const base =
-    'flex-row items-center justify-center rounded-tile px-5 active:opacity-80';
+    'flex-row items-center justify-center rounded-chip px-5 border active:opacity-80';
   const look = {
-    primary: 'bg-clay',
-    secondary: 'bg-clay-soft',
-    quiet: 'bg-sunk',
-    danger: 'bg-brick-soft',
+    primary: 'bg-clay border-clay',
+    secondary: 'bg-clay-soft border-clay-soft',
+    quiet: 'bg-surface border-border-warm',
+    danger: 'bg-brick-soft border-brick-soft',
   }[variant];
   const textLook = {
     primary: 'text-white',
@@ -138,7 +156,7 @@ export function Button({
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(isDisabled), busy }}
       disabled={isDisabled}
-      style={{ minHeight: 50 }}
+      style={{ minHeight: MIN_TAP_TARGET }}
       className={`${base} ${look} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`}
       {...rest}
     >
@@ -148,7 +166,7 @@ export function Button({
           className="mr-2"
         />
       ) : null}
-      <Text className={`text-[17px] font-semibold ${textLook}`}>{label}</Text>
+      <Text className={`text-base font-semibold ${textLook}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -177,16 +195,11 @@ export function Chip({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ selected }}
       style={interactive ? { minHeight: MIN_TAP_TARGET } : undefined}
-      className={`rounded-chip justify-center px-4 ${interactive ? '' : 'h-8 px-3'} ${
-        selected ? 'bg-espresso' : interactive ? 'bg-surface border border-border-warm' : 'bg-sunk'
+      className={`rounded-chip border px-4 ${interactive ? 'justify-center' : 'py-2'} ${
+        selected ? 'bg-clay border-clay' : 'bg-surface border-border-warm'
       }`}
     >
-      <Text
-        className={`${interactive ? 'text-base' : 'text-[15px]'} font-medium ${
-          selected ? 'text-white' : 'text-espresso'
-        }`}
-      >
-        {selected ? '✓  ' : ''}
+      <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-mocha'}`}>
         {label}
       </Text>
     </Pressable>
@@ -220,8 +233,8 @@ export function Badge({
   }[tone];
 
   return (
-    <View className={`rounded-md self-start px-2 py-0.5 ${look}`}>
-      <Text accessibilityLabel={accessibilityLabel} className={`text-[13px] font-semibold ${textLook}`}>
+    <View className={`rounded-chip self-start px-3 py-1 ${look}`}>
+      <Text accessibilityLabel={accessibilityLabel} className={`text-xs font-semibold ${textLook}`}>
         {label}
       </Text>
     </View>
@@ -260,8 +273,8 @@ export function EmptyState({
 export function ErrorNote({ error, onRetry }: { error: Error | string; onRetry?: () => void }) {
   const message = typeof error === 'string' ? error : error.message;
   return (
-    <Card className="gap-3">
-      <SectionTitle>Couldn&apos;t load this</SectionTitle>
+    <Card accent="brick" className="gap-3">
+      <SectionTitle>That did not load</SectionTitle>
       <Body>{message}</Body>
       {onRetry ? <Button label="Try again" variant="secondary" onPress={onRetry} /> : null}
     </Card>
@@ -296,10 +309,10 @@ export function ToggleRow({
         {description ? <Caption className="mt-0.5">{description}</Caption> : null}
       </View>
       <View
-        className={`h-[31px] w-[51px] justify-center rounded-chip px-0.5 ${value ? 'bg-[#2E9E5B]' : 'bg-[#E3E3DE]'}`}
+        className={`h-8 w-14 justify-center rounded-chip px-1 ${value ? 'bg-clay' : 'bg-sunk'}`}
       >
         <View
-          className={`bg-surface h-[27px] w-[27px] rounded-chip ${value ? 'self-end' : 'self-start'}`}
+          className={`bg-surface h-6 w-6 rounded-chip ${value ? 'self-end' : 'self-start'}`}
         />
       </View>
     </Pressable>

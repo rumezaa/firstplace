@@ -1,4 +1,3 @@
 node_modules/
 dist/
 .env
-box.local.json

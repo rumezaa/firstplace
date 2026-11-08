@@ -1,6 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AVAILABILITY, tablesSummary } from '@/lib/availability';
@@ -65,7 +65,7 @@ export default function MapScreen() {
       <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
 
       {/* Header + filter chips float over the map so the map stays full-bleed. */}
-      <SafeAreaView edges={['top']} className={`absolute left-0 right-0 top-0 ${Platform.OS === 'web' ? 'bg-cream' : ''}`} pointerEvents="box-none">
+      <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0" pointerEvents="box-none">
         <View className="px-5 pb-2 pt-1" pointerEvents="none">
           <Text className="text-espresso text-2xl font-bold" accessibilityRole="header">
             {APP_NAME}

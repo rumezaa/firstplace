@@ -59,7 +59,12 @@ export default function ConversationScreen() {
       {reporting ? (
         <ReportForm conversationId={c.id} onDone={() => { setReporting(false); router.replace('/'); }} onCancel={() => setReporting(false)} />
       ) : ended ? (
-        <Vote conversation={c} onVoted={() => (endedId === c.id ? reload() : setEndedId(c.id))} onDone={() => router.replace('/')} />
+        <Vote
+          conversation={c}
+          onVoted={() => (endedId === c.id ? reload() : setEndedId(c.id))}
+          onDone={() => router.replace('/')}
+          onReport={() => setReporting(true)}
+        />
       ) : (
         <Live conversation={c} onError={setError} onEnded={reload} onReport={() => setReporting(true)} />
       )}
@@ -166,7 +171,23 @@ function Live({
 
 /* ----------------------------------------------------------------- vote --- */
 
-function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation; onVoted: () => void; onDone: () => void }) {
+function Vote({
+  conversation: c,
+  onVoted,
+  onDone,
+  onReport,
+}: {
+  conversation: Conversation;
+  onVoted: () => void;
+  onDone: () => void;
+  onReport: () => void;
+}) {
+  // Reporting stays available after a conversation ends, whatever the vote.
+  const reportLink = (
+    <Pressable onPress={onReport} accessibilityRole="button" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 17, fontWeight: '500', color: colors.brick }}>Report a problem</Text>
+    </Pressable>
+  );
   const [busy, setBusy] = useState<string | null>(null);
 
   async function vote(v: 'good' | 'not_for_me') {
@@ -187,6 +208,7 @@ function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation
           <Body>You both said it was a good conversation. You&apos;ll find {c.their_first_name ?? 'them'} under Connections.</Body>
         </Card>
         <Button label="Done" onPress={onDone} />
+        {reportLink}
       </>
     );
   }
@@ -201,6 +223,7 @@ function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation
           </Body>
         </Card>
         <Button label="Done" onPress={onDone} />
+        {reportLink}
       </>
     );
   }
@@ -211,6 +234,7 @@ function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation
       <Body>Only you see your answer. Nobody is told how anyone voted.</Body>
       <Button label="Good conversation" busy={busy === 'good'} onPress={() => void vote('good')} />
       <Button label="Not for me" variant="quiet" busy={busy === 'not_for_me'} onPress={() => void vote('not_for_me')} />
+      {reportLink}
     </>
   );
 }

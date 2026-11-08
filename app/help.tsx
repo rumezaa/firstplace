@@ -94,6 +94,17 @@ export default function Help() {
             }
           }}
         />
+        {left === 'done' ? (
+          <>
+            <View style={{ height: 1, backgroundColor: colors.border, marginLeft: 52 }} />
+            <HelpRow
+              icon="flag-outline"
+              label="Report what happened"
+              detail="Optional. A person reviews every report."
+              onPress={() => router.replace('/conversation')}
+            />
+          </>
+        ) : null}
         <View style={{ height: 1, backgroundColor: colors.border, marginLeft: 52 }} />
         <HelpRow icon="hand-left-outline" label="Get staff to help" detail="A message to show at the counter" onPress={() => setStaffCard(true)} />
       </View>

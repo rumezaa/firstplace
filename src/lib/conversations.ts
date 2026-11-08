@@ -136,3 +136,16 @@ export function timeLeft(endsAt: string | null, now = Date.now()): { ms: number;
   const s = Math.floor((ms % 60000) / 1000);
   return { ms, label: `${m}:${String(s).padStart(2, '0')}` };
 }
+
+// ----------------------------------------------------------------- floor ---
+/** One table on a floor, as the NFC floor view shows it. Colours only. */
+export interface FloorTable {
+  id: string;
+  label: string;
+  seats: number;
+  is_chat_table: boolean;
+  box_enabled: boolean;
+  light: BoxLight;
+  mine: boolean;
+}
+export const fetchFloor = (venueId: string) => api.get<FloorTable[]>(`/venues/${venueId}/floor`);

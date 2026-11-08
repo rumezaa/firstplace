@@ -132,6 +132,27 @@ venues.get('/:id/tables', async (c) => {
   return c.json(rows.rows);
 });
 
+/**
+ * The floor view (what an NFC tag at the entrance opens): every table with its
+ * light, and whether it's yours. Same privacy as the box: colours only, never
+ * who is sitting where.
+ */
+venues.get('/:id/floor', async (c) => {
+  const rows = await asUser(c.get('userId'), (db) =>
+    db.query(
+      `select t.id, t.label, t.seats, t.is_chat_table, t.box_enabled,
+              public.table_light(t.id) as light,
+              exists (select 1 from public.checkins k
+                      where k.table_id = t.id and k.checked_out_at is null
+                        and k.user_id = auth.uid()) as mine
+       from public.tables t where t.venue_id = $1
+       order by t.is_chat_table desc, t.label`,
+      [c.req.param('id')],
+    ),
+  );
+  return c.json(rows.rows);
+});
+
 venues.get('/:id/busy-hours', async (c) => {
   const rows = await asUser(c.get('userId'), (db) =>
     db.query('select * from public.venue_busy_hours where venue_id = $1 order by hour_of_day', [c.req.param('id')]),

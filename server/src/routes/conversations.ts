@@ -62,6 +62,7 @@ conversations.get('/me/requests', async (c) => {
 
 conversations.post('/requests/:id/respond', async (c) => {
   const { accept, minutes = 30 } = await body<{ accept?: boolean; minutes?: number }>(c);
+  if (typeof accept !== 'boolean') throw new HTTPException(400, { message: 'accept must be true or false.' });
   return c.json(
     await rpc(c.get('userId'), 'public.respond_to_request($1, $2, $3)', [c.req.param('id'), Boolean(accept), minutes]),
   );

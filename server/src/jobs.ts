@@ -23,8 +23,8 @@ function sqlJob(name: string, everyMs: number, sql: string): Job {
 }
 
 const jobs: Job[] = [
-  sqlJob('auto check-out (3h)', 5 * 60_000, 'select public.auto_checkout_stale() as n'),
-  sqlJob('familiar faces matcher', 15 * 60_000, 'select public.refresh_familiar_faces() as n'),
+  sqlJob('expire conversations and away holds', 5_000, 'select app_private.expire_conversation_state() as n'),
+  sqlJob('expire meetups', 60_000, 'select app_private.expire_stale_meetups() as n'),
   sqlJob('10pm box shutoff', 60_000, 'select app_private.close_boxes_for_night() as n'),
   sqlJob('forget check-ins older than 90 days', 24 * 60 * 60_000, 'select app_private.purge_old_checkins() as n'),
 ];

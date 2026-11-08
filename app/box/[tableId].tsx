@@ -21,7 +21,7 @@ export default function VirtualBox() {
   const reload = useCallback(() => void view.reload(), [view]);
   useVenueTablesRealtime(tableId, reload);
 
-  const light = view.data?.light ?? 'off';
+  const light = view.error ? 'off' : view.data?.light ?? 'off';
   const info = LIGHT_INFO[light];
 
   return (
@@ -40,7 +40,7 @@ export default function VirtualBox() {
         </View>
       </View>
       <Text style={{ fontSize: 22, fontWeight: '700', color: colors.espresso }} accessibilityLiveRegion="polite">
-        {info.label}: {info.meaning}
+        {view.error ? 'No signal — check the connection' : `${info.label}: ${info.meaning}`}
       </Text>
       <Text style={{ color: colors.mocha, textAlign: 'center', maxWidth: 520 }}>
         Conversation zone. Anyone can sit here. Light off: just a table. Green: say hi. Yellow: request

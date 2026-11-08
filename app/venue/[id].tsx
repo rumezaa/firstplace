@@ -32,6 +32,7 @@ import {
 export default function VenueScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const venueId = String(id);
+  const router = useRouter();
 
   const venue = useAsync(() => fetchVenue(venueId), [venueId]);
   const live = useAsync(() => fetchVenueLiveOne(venueId), [venueId]);
@@ -73,7 +74,7 @@ export default function VenueScreen() {
     );
   }
 
-  const l = live.data;
+  const l = live.error ? null : live.data;
   // Without Gemini the server falls back to insider_info, which has its own
   // card below. Use the venue's summary instead so nothing shows twice.
   const vibeText = vibe.data && vibe.data !== v.insider_info ? vibe.data : v.vibe_summary;
@@ -94,13 +95,12 @@ export default function VenueScreen() {
         {v.address ? <Caption>{v.address}</Caption> : null}
       </View>
 
+      {live.error ? <ErrorNote error={live.error} onRetry={() => void live.reload()} /> : null}
       <View className="flex-row flex-wrap items-center gap-2">
         <Badge
-          label={presentation.label}
-          tone={
-            l?.availability === 'full' ? 'full' : l?.availability === 'filling_up' ? 'filling' : 'open'
-          }
-          accessibilityLabel={presentation.a11y}
+          label={l ? presentation.label : 'Live status unavailable'}
+          tone="neutral"
+          accessibilityLabel={l ? presentation.a11y : 'Live status unavailable'}
         />
         {l?.chat_table_active ? <Badge label="Chat table active" tone="chat" /> : null}
         {v.is_quiet ? <Badge label="Quiet" /> : null}
@@ -120,7 +120,7 @@ export default function VenueScreen() {
       <Card accent={openToChat > 0 ? 'berry' : undefined} className="gap-2">
         <SectionTitle>Open to chat right now</SectionTitle>
         <Body>
-          {openToChat === 0
+          {!l ? 'Live information is unavailable. Try refreshing.' : openToChat === 0
             ? 'Nobody has flagged themselves as open to chat yet. You could be the first.'
             : `${people(openToChat)} here said they are happy to be talked to.`}
         </Body>
@@ -160,11 +160,12 @@ export default function VenueScreen() {
       <Card className="gap-3">
         <View className="flex-row items-baseline justify-between">
           <SectionTitle>Tables</SectionTitle>
-          <Caption>{tablesSummary(l?.open_tables ?? 0, l?.total_tables ?? 0)}</Caption>
+          {l ? <Caption>{tablesSummary(l.open_tables, l.total_tables)}</Caption> : null}
         </View>
         <TableGridLegend hasChatTable={Boolean(l?.has_chat_table)} />
         {tables.loading && rows.length === 0 ? <Loading label="Reading the room" /> : null}
-        <TableGrid tables={rows} />
+        {tables.error ? <ErrorNote error={tables.error} onRetry={() => void tables.reload()} /> : <TableGrid tables={rows} />}
+        {!tables.loading && !tables.error && rows.length === 0 ? <Body>No tables are listed yet.</Body> : null}
         {l?.has_chat_table ? <ChatTableNote /> : null}
       </Card>
 

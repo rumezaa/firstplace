@@ -227,16 +227,16 @@ export function Badge({
 }) {
   const look = {
     neutral: 'bg-sunk',
-    open: 'bg-sage-soft',
-    filling: 'bg-amber-soft',
-    full: 'bg-brick-soft',
+    open: 'bg-clay-soft',
+    filling: 'bg-sunk',
+    full: 'bg-sunk',
     chat: 'bg-berry-soft',
   }[tone];
   const textLook = {
     neutral: 'text-mocha',
-    open: 'text-sage',
-    filling: 'text-amber',
-    full: 'text-brick',
+    open: 'text-clay',
+    filling: 'text-mocha',
+    full: 'text-mocha',
     chat: 'text-berry',
   }[tone];
 
@@ -317,7 +317,7 @@ export function ToggleRow({
         {description ? <Caption className="mt-0.5">{description}</Caption> : null}
       </View>
       <View
-        className={`h-[31px] w-[51px] justify-center rounded-chip px-0.5 ${value ? 'bg-[#2E9E5B]' : 'bg-[#E3E3DE]'}`}
+        className={`h-[31px] w-[51px] justify-center rounded-chip px-0.5 ${value ? 'bg-clay' : 'bg-sunk'}`}
       >
         <View
           className={`bg-surface h-[27px] w-[27px] rounded-chip ${value ? 'self-end' : 'self-start'}`}

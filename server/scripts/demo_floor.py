@@ -53,7 +53,9 @@ def login(name):
 
 
 # Everyone (including Alex) leaves whatever they hold, so the floor starts clean.
-for name in ['demo'] + [s[0] for s in SEATS]:
+# Everyone who has ever been seated by this script, so old runs never linger.
+ALL_STUDENTS = ['priya', 'wei', 'jordan', 'amara', 'ben', 'chloe', 'dev', 'elena', 'farid', 'grace', 'hiro', 'sam', 'maya']
+for name in ['demo'] + ALL_STUDENTS:
     call('POST', '/me/leave-now', token=login(name))
 
 if 'reset' not in sys.argv:

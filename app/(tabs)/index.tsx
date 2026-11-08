@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AVAILABILITY, tablesSummary } from '@/lib/availability';
@@ -20,6 +20,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
 import { Badge, Body, Caption, Chip, ErrorNote, Loading, SectionTitle } from '@/components/ui';
 import { VenueMap } from '@/components/VenueMap';
+import { VenueList } from '@/components/VenueList';
 
 export default function MapScreen() {
   const [filters, setFilters] = useState<VenueFilters>(NO_FILTERS);
@@ -37,6 +38,7 @@ export default function MapScreen() {
 
   const venues = venuesState.data ?? [];
   const live = liveState.data ?? {};
+  const [asList, setAsList] = useState(false);
   const visible = filterVenues(venues, live, filters);
   const selected = visible.find((v) => v.id === selectedId) ?? null;
 
@@ -62,7 +64,11 @@ export default function MapScreen() {
 
   return (
     <View className="bg-cream flex-1">
-      <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
+      {asList && Platform.OS !== 'web' ? (
+        <VenueList venues={visible} live={live} onSelect={setSelectedId} />
+      ) : (
+        <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
+      )}
 
       {/* Header + filter chips float over the map so the map stays full-bleed.
           A solid backdrop keeps them readable over busy map tiles on iOS too,
@@ -95,6 +101,14 @@ export default function MapScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerClassName="gap-2 px-5 pb-2"
         >
+          {Platform.OS !== 'web' ? (
+            <Chip
+              label={asList ? 'Map' : 'List'}
+              selected={false}
+              onPress={() => setAsList((v) => !v)}
+              accessibilityHint={asList ? 'Show places on the map' : 'Show places as a list'}
+            />
+          ) : null}
           <Chip
             label="Has tables"
             selected={filters.hasTables}

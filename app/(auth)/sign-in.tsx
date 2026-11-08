@@ -1,14 +1,14 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { errorMessage } from '@/lib/api';
-import { AUTH0_AVAILABLE, AUTH0_REDIRECT_URI, auth0CallbackMismatchHelp } from '@/lib/auth0';
+import { AUTH0_AVAILABLE, AUTH0_REDIRECT_URI } from '@/lib/auth0';
 import { colors } from '@/lib/theme';
 import { Wordmark } from '@/components/AppMark';
 import { LightPole } from '@/components/LightPole';
-import { Body, Button, Caption, Card, ErrorNote, SectionTitle } from '@/components/ui';
+import { Button, Caption, ErrorNote } from '@/components/ui';
 import { DEMO_ACCOUNT_AVAILABLE, useSession } from '@/providers/SessionProvider';
 
 /** Welcome (design kit v2, 2.1): logo, the lit pole, one instruction, sign in. */
@@ -33,18 +33,19 @@ export default function SignIn() {
     }
   }
 
-  // A rejected redirect URI never comes back to us: Auth0 shows its "Callback
-  // URL mismatch" page in the browser and the person closes it, which reaches
-  // us as a plain dismissal. So when sign-in ends that way, say what to check
-  // rather than leaving the screen looking like nothing happened.
+  // Closing the Auth0 window reaches us as a plain dismissal. Usually that's
+  // just someone changing their mind, so say so kindly. A rejected callback
+  // address looks the same from here; the dev-only line at the bottom shows the
+  // address to register in Auth0 for that case.
   async function startAuth0(signUp = false) {
     const outcome = await signInWithAuth0({ signUp });
-    if (outcome === 'dismissed') setNote(auth0CallbackMismatchHelp());
+    if (outcome === 'dismissed') setNote(signUp ? 'Sign-up was closed. Tap Create an account to try again.' : 'Sign-in was closed. Tap a button to try again.');
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 20 }}>
+      {/* Scrolls on short phones, so messages push the buttons down instead of hiding behind them. */}
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 20 }}>
         <Wordmark size={20} />
         {/* The pole shrinks to md so it never collides with the headline on shorter phones. */}
         <View style={{ flex: 1, minHeight: 200, alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}>
@@ -65,17 +66,11 @@ export default function SignIn() {
           </View>
         ) : null}
         {note ? (
-          <View style={{ marginTop: 16 }}>
-            <Card className="gap-2">
-              <SectionTitle>Sign-in didn&apos;t finish</SectionTitle>
-              <Body>
-                {/* Selectable so the address can be copied straight into Auth0. */}
-                <Text selectable>{note}</Text>
-              </Body>
-            </Card>
+          <View style={{ marginTop: 16 }} accessibilityLiveRegion="polite">
+            <Caption>{note}</Caption>
           </View>
         ) : null}
-      </View>
+      </ScrollView>
 
       <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24, gap: 8 }}>
         {AUTH0_AVAILABLE ? (

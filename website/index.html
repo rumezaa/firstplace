@@ -94,20 +94,95 @@
   </section>
 
   <section id="legend" class="band band--mint">
-    <h2>What the lights mean</h2>
+    <div class="band-inner">
+      <h2>What the lights mean</h2>
+      <ul class="lights">
+        <li class="chip"><span class="dot dot--go" aria-hidden="true"></span><div><strong>Say hi</strong><p>Someone's here and open to talk. Walk over and join.</p></div></li>
+        <li class="chip"><span class="dot dot--free" aria-hidden="true"></span><div><strong>Free table</strong><p>Nobody's claimed it. Claim it to start your own.</p></div></li>
+        <li class="chip"><span class="dot dot--stop" aria-hidden="true"></span><div><strong>Not now</strong><p>Taken, or not available.</p></div></li>
+      </ul>
+    </div>
   </section>
 
   <section id="how" class="band band--lilac">
-    <h2>How it works</h2>
-    <p>For people &middot; For venues &middot; How we built it</p>
+    <div class="band-inner">
+      <h2>How it works</h2>
+      <div class="tablist" role="tablist" aria-label="How it works">
+        <button type="button" role="tab" id="tab-people" aria-controls="people" aria-selected="true">For people</button>
+        <button type="button" role="tab" id="tab-venues" aria-controls="venues" aria-selected="false" tabindex="-1">For venues</button>
+        <button type="button" role="tab" id="tab-built" aria-controls="built" aria-selected="false" tabindex="-1">How we built it</button>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="people" aria-labelledby="tab-people">
+        <picture class="tab-banner">
+          <source type="image/webp" srcset="img/chatter_lonely_park-960.webp 960w, img/chatter_lonely_park-1920.webp 1920w" sizes="(min-width: 960px) 880px, 100vw">
+          <img src="img/chatter_lonely_park-1920.webp" width="1920" height="1072" alt="The green character sits alone on a park bench while a small group chats nearby." loading="lazy" decoding="async">
+        </picture>
+        <ol class="steps">
+          <li>Scan in at the kiosk.</li>
+          <li>See the floor map of tables.</li>
+          <li>Find a green table to join, or claim a yellow one to start your own.</li>
+          <li>Walk over and say hi.</li>
+          <li>Stuck for words? A Gemini icebreaker gets you going.</li>
+          <li>After the chat, rate it. If you both want to meet again, you swap socials. Report or block is always one tap away.</li>
+        </ol>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="venues" aria-labelledby="tab-venues" hidden>
+        <picture class="tab-banner">
+          <source type="image/webp" srcset="img/chatter_study_happy-960.webp 960w, img/chatter_study_happy-1920.webp 1920w" sizes="(min-width: 960px) 880px, 100vw">
+          <img src="img/chatter_study_happy-1920.webp" width="1920" height="1072" alt="Characters studying and chatting happily together at a table." loading="lazy" decoding="async">
+        </picture>
+        <div class="two-col">
+          <div>
+            <h3>What you get</h3>
+            <ul class="plain">
+              <li>A kiosk with a live floor map.</li>
+              <li>A light box on each table.</li>
+              <li>Events for groups.</li>
+              <li>A dashboard with totals only, never who.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>How to join</h3>
+            <ol class="plain">
+              <li>Contact us.</li>
+              <li>We set up the boxes.</li>
+              <li>Place your tables on the floor map.</li>
+              <li>Set your hours. Lights switch off after 10pm.</li>
+            </ol>
+          </div>
+        </div>
+        <a class="btn" href="#contact">Contact us</a>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="built" aria-labelledby="tab-built" hidden>
+        <picture class="tab-banner">
+          <source type="image/webp" srcset="img/chatter_study_alone-960.webp 960w, img/chatter_study_alone-1920.webp 1920w" sizes="(min-width: 960px) 880px, 100vw">
+          <img src="img/chatter_study_alone-1920.webp" width="1920" height="1072" alt="A character studies alone at a table with a laptop." loading="lazy" decoding="async">
+        </picture>
+        <!-- Task 5: diagram and stack list go here -->
+        <div class="diagram-slot"></div>
+        <h3>Our privacy promises</h3>
+        <ul class="plain">
+          <li>The kiosk and boxes only know about tables, not who sits at them.</li>
+          <li>Venue dashboards show totals only, never who.</li>
+          <li>Socials are shared only when both people say yes.</li>
+          <li>Report or block is always one tap away.</li>
+          <li>Lights switch off after 10pm.</li>
+        </ul>
+      </div>
+    </div>
   </section>
   </main>
 
   <footer id="contact" class="site-footer">
     <img src="img/logo.png" width="48" height="48" alt="Chatterbox logo">
     <p class="footer-name">Chatterbox &middot; Made in Calgary</p>
+    <h2>Contact us</h2>
     <p>We're setting up venue sign-ups. Check back soon.</p>
   </footer>
+  <script defer src="js/tabs.js"></script>
   <script defer src="js/main.js"></script>
 </body>
 </html>

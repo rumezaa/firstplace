@@ -3,6 +3,8 @@
   var root = document.documentElement;
   root.classList.add('js');
 
+  if (window.ChatterTabs) ChatterTabs.initTabs(document.getElementById('how'));
+
   var targets = Array.prototype.slice.call(document.querySelectorAll('.reveal, .panel'));
   var legend = document.getElementById('legend');
   var header = document.querySelector('.site-header');

@@ -165,7 +165,7 @@ test('scripts are classic defer', () => {
   }
 });
 
-test('main.js is classic, guarded, and leaves tabs to Task 4', () => {
+test('main.js is classic, guarded, and wires tabs', () => {
   assert.ok(fs.existsSync(JS_PATH), 'js/main.js missing');
   const js = fs.readFileSync(JS_PATH, 'utf8');
   assert.doesNotMatch(js, /^\s*(import|export)\s/m);
@@ -174,5 +174,34 @@ test('main.js is classic, guarded, and leaves tabs to Task 4', () => {
   assert.match(js, /threshold:\s*0\.35/);
   assert.match(js, /is-solid/);
   assert.match(js, /legend/);
-  assert.doesNotMatch(js, /initTabs/);
+  assert.match(js, /ChatterTabs\.initTabs\(document\.getElementById\('how'\)\)/);
+});
+
+// ---- Task 4: legend, tabs, contact ----
+test('tabs a11y', () => {
+  const h = html();
+  assert.strictEqual((h.match(/role="tab"/g) || []).length, 3);
+  assert.strictEqual((h.match(/role="tabpanel"/g) || []).length, 3);
+  const panels = h.match(/<div\b[^>]*role="tabpanel"[^>]*>/g);
+  assert.strictEqual(panels.filter((t) => /\bhidden\b/.test(t)).length, 2);
+});
+
+test('legend copy', () => {
+  const h = html();
+  for (const s of ['Say hi', 'Free table', 'Not now']) assert.ok(h.includes(s), s);
+});
+
+test('contact', () => {
+  const h = html();
+  assert.match(h, /id="contact"/);
+  const links = h.match(/<a\b[^>]*>\s*Contact us\s*<\/a>/g) || [];
+  assert.ok(links.length >= 2);
+  for (const l of links) assert.match(l, /href="#contact"/, l);
+});
+
+test('tabs.js loads before main.js', () => {
+  const h = html();
+  const a = h.indexOf('js/tabs.js'), b = h.indexOf('js/main.js');
+  assert.ok(a > -1 && a < b);
+  assert.match(h, /<script defer src="js\/tabs\.js">/);
 });

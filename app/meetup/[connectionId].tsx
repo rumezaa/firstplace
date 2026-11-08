@@ -26,6 +26,7 @@ import {
   type Slot,
 } from '@/lib/meetups';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
+import { fetchConnectionItinerary, type ItineraryResponse } from '@/lib/plans';
 import { useAsync } from '@/hooks/useAsync';
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import {
@@ -201,6 +202,8 @@ export default function MeetupScreen() {
           onPress={() => void act('cancel', () => cancelMeetup(view.meetup_id))}
         />
       ) : null}
+
+      <WalkingPlan connectionId={connectionId} />
 
       <Card className="gap-2">
         <SectionTitle>How this works</SectionTitle>
@@ -496,4 +499,88 @@ function PlanBody({ plan }: { plan: MeetupPlan }) {
       ) : null}
     </View>
   );
+}
+
+/**
+ * "Or just go for a walk": a short route from where you first met, built on
+ * public City of Calgary places, today's weather, the time and holidays
+ * (server/src/itinerary.ts). Gemini writes the stops from what you both share;
+ * without it the route still works. Loads only when asked.
+ */
+const START_TIMES = ['Now', '12:00', '14:00', '17:00'] as const;
+
+function WalkingPlan({ connectionId }: { connectionId: string }) {
+  const [start, setStart] = useState<(typeof START_TIMES)[number] | null>(null);
+  const [data, setData] = useState<ItineraryResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function load(at: (typeof START_TIMES)[number]) {
+    setStart(at);
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await fetchConnectionItinerary(connectionId, at === 'Now' ? {} : { start: at }));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const it = data?.itinerary ?? null;
+  const ctx = data?.context;
+  return (
+    <Card className="gap-3">
+      <SectionTitle>Or just go for a walk</SectionTitle>
+      <Caption>A short route from where you met, using public Calgary places, today&apos;s weather and what you both like.</Caption>
+      <View className="flex-row flex-wrap gap-2">
+        {START_TIMES.map((t) => (
+          <Button
+            key={t}
+            label={t === 'Now' ? 'Now' : to12h(t)}
+            variant={start === t ? 'primary' : 'quiet'}
+            busy={loading && start === t}
+            onPress={() => void load(t)}
+          />
+        ))}
+      </View>
+
+      {error ? <ErrorNote error={error} /> : null}
+      {ctx?.weather ? (
+        <Caption>
+          {ctx.weekday[0].toUpperCase() + ctx.weekday.slice(1)} · {ctx.weather.condition}
+          {ctx.weather.tempC != null ? `, ${Math.round(ctx.weather.tempC)}°C` : ''}
+          {ctx.weather.feelsLikeC != null ? ` (feels ${Math.round(ctx.weather.feelsLikeC)}°)` : ''}
+          {ctx.holiday ? ` · ${ctx.holiday}` : ''}
+        </Caption>
+      ) : null}
+      {data && !it ? <Body>{data.message ?? 'Nothing fits that time. Try another.'}</Body> : null}
+
+      {it ? (
+        <View className="gap-3">
+          <Text style={{ fontSize: 17, fontWeight: '700' }}>{it.title}</Text>
+          {it.stops.map((stop) => (
+            <View key={stop.order} className="gap-1">
+              <Caption>
+                {stop.arriveClock} · {stop.walkMinFromPrev} min walk
+              </Caption>
+              <Text style={{ fontSize: 16, fontWeight: '600' }}>{stop.place.name}</Text>
+              <Body>{stop.what}</Body>
+              {stop.icebreaker ? <Caption>Ask: {stop.icebreaker}</Caption> : null}
+            </View>
+          ))}
+          {it.notes.map((n) => (
+            <Caption key={n}>{n}</Caption>
+          ))}
+          {data?.generated ? <Caption>Written with Gemini from what you both listed. Places: City of Calgary open data.</Caption> : null}
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+function to12h(hhmm: string): string {
+  const h = Number(hhmm.slice(0, 2));
+  return `${h % 12 || 12} ${h < 12 ? 'a.m.' : 'p.m.'}`;
 }

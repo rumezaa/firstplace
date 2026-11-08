@@ -2,14 +2,15 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { fetchOpenCheckin } from '@/lib/checkins';
 import { fetchConversation, parseBoxCode } from '@/lib/conversations';
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import { fetchTables, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
-import { Body, Button, Caption, Card, Loading, Screen, SectionTitle, Title } from '@/components/ui';
+import { Body, Button, Card, Loading, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
  * Tap or scan a First Place box. The box's NFC tag and printed QR both hold a
@@ -35,7 +36,7 @@ export default function CheckinScreen() {
     <Screen>
       <View className="gap-1">
         <Title>Find a table</Title>
-        <Body>Tap your phone on a First Place box, or scan the code on its side.</Body>
+        <Body>Tap your phone on the box at a table, or scan its code.</Body>
       </View>
 
       {conversation.data && !conversation.data.ended_at ? (
@@ -117,8 +118,7 @@ function PickByHand({ onTable }: { onTable: (id: string) => void }) {
 
   return (
     <Card className="gap-3">
-      <SectionTitle>No camera? Pick the box</SectionTitle>
-      <Caption>Staff can also help you claim a table.</Caption>
+      <SectionTitle>Or pick a place</SectionTitle>
       {!venueId ? (
         (venues.data ?? []).map((v) => (
           <Row key={v.id} label={v.name} onPress={() => setVenueId(v.id)} />

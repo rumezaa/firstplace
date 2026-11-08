@@ -36,9 +36,9 @@ export function faceState(card: FamiliarFaceCard): FaceState {
  */
 export function faceHeadline(card: FamiliarFaceCard): string {
   if (card.mutual && card.their_first_name) {
-    return `You and ${card.their_first_name} both said yes`;
+    return `You and ${card.their_first_name}`;
   }
-  return `You and another regular keep crossing paths at ${card.venue_name}`;
+  return `A regular at ${card.venue_name}`;
 }
 
 export function faceDetail(card: FamiliarFaceCard): string {
@@ -47,10 +47,10 @@ export function faceDetail(card: FamiliarFaceCard): string {
 
   switch (faceState(card)) {
     case 'mutual':
-      return `You have overlapped ${times} at ${card.venue_name}, mostly on ${when}. Say hello at the chat table next time you are both in.`;
+      return `${times[0].toUpperCase()}${times.slice(1)} at ${card.venue_name}, mostly ${when}. Say hi at the chat table.`;
     case 'waiting_on_them':
-      return `You said yes. We will let you know if they do too. Nothing is shared until then.`;
+      return `You said yes. Nothing is shared unless they do too.`;
     case 'pending':
-      return `You have been there at the same time ${times}, mostly on ${when}. If you both say yes, you will see each other's first names.`;
+      return `Same place, same time, ${times}, mostly ${when}. If you both say yes, you'll see first names.`;
   }
 }

@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/Text';
 import QRCode from 'react-native-qrcode-svg';
 
 import { LIGHT_INFO, boxLink, fetchTableView } from '@/lib/conversations';

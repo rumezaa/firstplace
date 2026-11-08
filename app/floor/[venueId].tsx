@@ -1,6 +1,7 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Platform, Pressable, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 import { LIGHT_INFO, fetchFloor, type BoxLight, type FloorTable } from '@/lib/conversations';

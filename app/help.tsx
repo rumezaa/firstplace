@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Platform, Pressable, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { leaveNow } from '@/lib/conversations';
 import { MIN_TAP_TARGET, colors } from '@/lib/theme';

@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { LIGHT_INFO, type Light } from '@/lib/conversations';
 import { colors } from '@/lib/theme';

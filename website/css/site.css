@@ -178,9 +178,35 @@ a { color: inherit; }
 .two-col { display: grid; gap: 18px; }
 @media (min-width: 700px) { .two-col { grid-template-columns: 1fr 1fr; } }
 .tabpanel > .btn { justify-self: start; }
-.diagram-slot:empty { display: none; }
 .site-footer h2 { font-size: 1.75rem; }
 @media (max-width: 480px) {
   .tablist { gap: 4px; }
   .tablist [role="tab"] { flex: 1 1 auto; padding: 8px 6px; font-size: 0.9375rem; }
+}
+
+/* How we built it */
+.diagram-slot { overflow: hidden; }
+.diagram { display: block; width: 100%; height: auto; font-family: var(--display); font-weight: 500; font-size: 16px; fill: var(--ink); }
+.diagram--narrow { display: none; max-width: 340px; margin: 0 auto; font-size: 14px; }
+.diagram .n { stroke: var(--ink); stroke-width: 3; }
+.diagram .mint { fill: var(--mint); }
+.diagram .peach { fill: var(--peach); }
+.diagram .butter { fill: var(--butter); }
+.diagram .lilac { fill: var(--lilac); }
+.diagram .sky { fill: var(--sky); }
+.diagram .edge { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.diagram .arrow-head { fill: var(--ink); }
+.diagram .lab { font-size: 15px; font-weight: 600; }
+.diagram--narrow .lab { font-size: 14px; }
+.diagram circle { stroke: var(--ink); stroke-width: 2; }
+.diagram .d-go { fill: var(--go); }
+.diagram .d-free { fill: var(--free); }
+.diagram .d-stop { fill: var(--stop); }
+.stack { list-style: none; padding-left: 0; }
+.stack li { padding-left: 1.2em; position: relative; }
+.stack li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 0.6em; height: 0.6em; border: 3px solid var(--ink); border-radius: 50%; background: var(--butter); box-sizing: content-box; transform: translate(-3px, -3px) scale(0.8); }
+@media (min-width: 700px) { .stack { grid-template-columns: 1fr 1fr; column-gap: 24px; } }
+@media (max-width: 699px) {
+  .diagram--wide { display: none; }
+  .diagram--narrow { display: block; }
 }

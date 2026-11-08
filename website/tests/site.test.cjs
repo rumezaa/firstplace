@@ -205,3 +205,22 @@ test('tabs.js loads before main.js', () => {
   assert.ok(a > -1 && a < b);
   assert.match(h, /<script defer src="js\/tabs\.js">/);
 });
+
+// ---- Task 5: diagram and stack ----
+test('diagram', () => {
+  const h = html();
+  const m = h.match(/id="built"[\s\S]*?<\/section>/);
+  assert.ok(m, '#built');
+  const built = m[0];
+  const svgs = built.match(/<svg\b[^>]*>[\s\S]*?<\/svg>/g) || [];
+  assert.ok(svgs.length >= 1);
+  for (const s of svgs) {
+    assert.match(s, /role="img"/);
+    assert.match(s, /<title\b/);
+    assert.match(s, /<desc\b/);
+  }
+  for (const s of ['Tiger Data', 'Auth0', 'ESP32', 'just a colour', 'every 2s: what colour?', 'Hono on Node', 'Vultr + Caddy', 'Expo Router']) {
+    assert.ok(built.includes(s), s);
+  }
+  assert.ok(!/<(filter|linearGradient|radialGradient)/.test(built));
+});

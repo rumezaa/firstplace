@@ -33,37 +33,39 @@ The demo runs at the University of Calgary's Taylor Family Digital Library (TFDL
 
 ## What it does
 
-| Feature                       | What you see                                                                                                                                                                                                 |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Explore**                   | Calgary places on a map or a list, including the UCalgary campus. Live counts and a short Gemini summary of what each place is like right now.                                                               |
-| **Floor map**                 | TFDL floor 3, traced from the real floor plan, with every study table showing its light.                                                                                                                     |
-| **Table**                     | Claim a table and set your light to green or red. "I'll be right back" holds your seat for 5 minutes. You're checked out automatically after 3 hours.                                                        |
-| **Conversations**             | Join a green table and talk. The light turns red while you talk. At the end you both vote on whether to keep going. Leave now, Report and Help are always one tap away.                                      |
-| **People**                    | Familiar faces: you get a card when you've overlapped with someone on 3 or more separate days, for at least 20 minutes each time. You see a first name only after you both accept.                           |
-| **Meetups**                   | Plan a second meeting with a connection. Each of you sees only the times you share. The plan takes Calgary weather, holidays and opening hours into account. There's also an "Or just go for a walk" option. |
-| **You**                       | Your profile and interests, privacy settings (incognito, and "Show what we have in common"), and your recent visits.                                                                                         |
-| **Box**                       | An ESP32 light on the table that mirrors the table's colour in about 2 seconds.                                                                                                                              |
-| **Kiosk and owner dashboard** | For venue staff, in the web version of the app. The dashboard shows totals only and hides them below 5 visitors.                                                                                             |
-| **Landing page**              | A static site in [`website/`](website/).                                                                                                                                                                     |
+| Feature                       | What you see                                                                                                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Onboarding**                | First-time setup after sign-in, one question per screen: name, at least 3 interests, topics and languages, and an optional gender that stays private. Each step saves as you go, so you can quit and pick up later. |
+| **Explore**                   | Calgary places on a map or a list, including the UCalgary campus. Live counts and a short Gemini summary of what each place is like right now.                                                                     |
+| **NFC tags and QR codes**     | Hold your phone to the box on a table to open that table, or to the tag at the entrance to check in to the place. The same links are printed as QR codes. See [NFC_TAGS.md](docs/NFC_TAGS.md).                     |
+| **Floor map**                 | TFDL floor 3, traced from the real floor plan, with every study table showing its light. Once you're checked in, the room shows counts only ("12 people here · 4 open to talk · 3 into hiking like you"), and green tables show what you have in common with the person there. |
+| **Table**                     | Claim a table and set your light to green or red. Yellow means a free seat. "I'll be right back" holds your seat for 5 minutes. You're checked out automatically after 3 hours.                                    |
+| **Conversations**             | Say hi at a green table. The seated person's phone buzzes and opens the conversation within a few seconds. The light turns red while you talk. At the end you both vote on whether to keep going; if you both say yes, you both land in People. Leave now, Report and Help are always one tap away. |
+| **People**                    | Familiar faces: you get a card when you've overlapped with someone on 3 or more separate days, for at least 20 minutes each time. You see a first name only after you both accept.                                 |
+| **Meetups**                   | Plan a second meeting with a connection. Each of you sees only the times you share. The plan takes Calgary weather, holidays and opening hours into account. There's also an "Or just go for a walk" option.       |
+| **You**                       | Your profile and interests, privacy settings (incognito, and "Show what we have in common"), and your recent visits.                                                                                               |
+| **Box**                       | An ESP32 light on the table that mirrors the table's colour in about 2 seconds.                                                                                                                                    |
+| **Kiosk and owner dashboard** | For venue staff, in the web version of the app. The dashboard shows totals only and hides them below 5 visitors.                                                                                                   |
+| **Landing page**              | A static site in [`website/`](website/).                                                                                                                                                                           |
 
 ---
 
 ## How it works
 
 ```
- Phones (Expo Go)        Kiosk / dashboard / box screen (Expo web)        ESP32 box
-        │                                 │                                   │
-        └────── Auth0 sign-in ────────────┘                    X-Device-Key, every 2s
-                         │ Bearer token                                       │
-                         ▼                                                    ▼
-          API: Node 22 + Hono (server/) ──────────────────────── GET /hw/tables/:id/state
-            ├─ runs every query as the signed-in user → row-level security decides
-            ├─ Gemini: venue summaries, openers, meetup plans, owner tips (server-side only)
-            ├─ Google Places + Calgary open data + Environment Canada weather
-            └─ background jobs: conversation expiry, 10pm box shutoff, familiar-faces matcher
-                         │
-                         ▼
-          Tiger Data (Postgres + TimescaleDB)   db/migrations/*.sql
+ NFC sticker / QR code     Phones (Expo Go)     Kiosk / dashboard / box screen (Expo web)     ESP32 box
+        │                         │                              │                            │
+ GET /t/:table, /v/:venue         └─────── Auth0 sign-in ────────┘               X-Device-Key, every 2s
+ (tiny page → opens app)                         │ Bearer token                                │
+        │                                        ▼                                             ▼
+        └──────────────► API: Node 22 + Hono (server/) ──────────────────── GET /hw/tables/:id/state
+                           ├─ runs every query as the signed-in user → row-level security decides
+                           ├─ Gemini: venue summaries, openers, meetup plans, owner tips (server-side only)
+                           ├─ Google Places + Calgary open data + Environment Canada weather
+                           └─ background jobs: conversation expiry, 10pm box shutoff, familiar-faces matcher
+                                         │
+                                         ▼
+                           Tiger Data (Postgres + TimescaleDB)   db/migrations/*.sql
 ```
 
 | Layer    | Choice                                                                                             |
@@ -75,7 +77,7 @@ The demo runs at the University of Calgary's Taylor Family Digital Library (TFDL
 | AI       | Gemini, server-side only, with rate limits, timeouts and fallback text                             |
 | Hardware | ESP32 + LED strip ([firmware](https://github.com/AArellano101/first-place-embedded))               |
 
-More detail: [TECH_STACK.md](docs/TECH_STACK.md) · [MEETUP_PLANNER.md](docs/MEETUP_PLANNER.md) · [BOX.md](docs/BOX.md) · [AUTH0.md](docs/AUTH0.md)
+More detail: [TECH_STACK.md](docs/TECH_STACK.md) · [MEETUP_PLANNER.md](docs/MEETUP_PLANNER.md) · [BOX.md](docs/BOX.md) · [NFC_TAGS.md](docs/NFC_TAGS.md) · [AUTH0.md](docs/AUTH0.md)
 
 ---
 
@@ -84,6 +86,10 @@ More detail: [TECH_STACK.md](docs/TECH_STACK.md) · [MEETUP_PLANNER.md](docs/MEE
 The privacy rules are enforced in the database, not just hidden by the app. The server runs each request as the signed-in user, so if the server forgets a filter, the database still refuses.
 
 - **Nobody can see who is at a place.** You can only read your own check-ins. Crowd information comes pre-counted, with no names or IDs.
+- **The room never says who.** The entrance check-in shows counts only. "Like you" needs at least 2 people sharing that interest, so it can't point at one person.
+- **Shared interests on green tables need consent from both sides.** They only show when the person there has turned their light green, you're checked in at that place, and neither of you has turned off "Show what we have in common". No name or profile.
+- **Your gender is private.** Only you can read it, through your own profile. No other screen, count, match or Gemini prompt uses it, and `server/tests/onboarding_test.py` checks that it never leaks.
+- **Tags carry only a link.** Nothing about you goes over NFC. Your sign-in says who you are.
 - **The box gets a colour and nothing else.** No names, no counts. If anything is unclear (no one at the table, box switched off, after 10pm, any error), the light goes **off**.
 - **Names appear only after both people accept.** Before that, the name is never sent at all.
 - **A decline looks exactly like "not available."** The 24-hour cooldown after a decline is silent.
@@ -108,7 +114,7 @@ docker exec firstplace-db psql -U postgres -c "create database firstplace"
 # 2. API (terminal 1)
 cd server
 npm install
-cp .env.example .env          # set DATABASE_URL, add GEMINI_API_KEY
+cp .env.example .env          # set DATABASE_URL, add GEMINI_API_KEY, APP_LINK_BASE for tag links
 npm run db:setup              # applies db/migrations/*.sql and loads demo data
 npm run dev                   # http://localhost:8787/health
 
@@ -120,7 +126,9 @@ npx expo start                # scan the QR with Expo Go, or press w for web
 
 On the sign-in screen, tap **Try the demo account** to skip Auth0. Put your phone and laptop on the same network; a phone hotspot works best.
 
-To seat demo students on TFDL floor 3: `python3 server/scripts/demo_floor.py`.
+TFDL floor 3 demo: `python3 server/scripts/demo_floor.py` leaves every seat free (yellow); `python3 server/scripts/demo_floor.py busy` seats 7 demo students (4 green, 3 red).
+
+NFC stickers and QR codes point at the API server (`/t/<tableId>`, `/v/<venueId>`), which forwards to `APP_LINK_BASE` in `server/.env`. In Expo Go, set it to `exp://<laptop-ip>:8081/--/`. To change where tags go, change that setting; you never need to rewrite the stickers. Set `EXPO_PUBLIC_BOX_BASE_URL` in the app's `.env` to the deployed server before writing stickers. Steps: [docs/NFC_TAGS.md](docs/NFC_TAGS.md).
 
 ### Check your work
 
@@ -130,6 +138,8 @@ npx expo lint
 (cd server && npx tsc --noEmit -p tsconfig.json && npm test)
 python3 server/tests/flow_test.py http://localhost:8787      # needs the API running on fresh demo data
 python3 server/tests/meetup_test.py http://localhost:8787
+python3 server/tests/room_test.py http://localhost:8787      # entrance check-in and the room
+python3 server/tests/onboarding_test.py http://localhost:8787  # onboarding; gender never leaks
 ```
 
 ---
@@ -139,16 +149,17 @@ python3 server/tests/meetup_test.py http://localhost:8787
 ```
 app/                 Expo Router screens (every file is a route)
   (auth)/            sign-in
+  onboarding/        first-time setup
   (tabs)/            Explore, Table, People, You
   venue/ floor/      venue page, floor map
   table/ conversation.tsx waiting/   claim a table, talk, wait on a request
   meetup/            plan a second meeting
   box/ kiosk/ dashboard/             web screens for the box, kiosk and owners
 src/                 components, hooks, API client and helpers (imported as @/)
-server/              Hono API, background jobs, Gemini, Places, weather, tests
+server/              Hono API, NFC/QR tag links, background jobs, Gemini, Places, weather, tests
 db/migrations/       database setup in numbered SQL files (applied in order) + seed.sql
 website/             static landing page
-docs/                setup, tech stack, box, Auth0, meetup planner, review brief
+docs/                setup, tech stack, box, NFC tags, Auth0, meetup planner, review brief
 supabase/            old Supabase version, kept for reference only and no longer used
 ```
 
@@ -156,12 +167,13 @@ supabase/            old Supabase version, kept for reference only and no longer
 
 ## Status
 
-**Working:** sign-in, Explore, floor map, table lights and the box, conversations and votes, familiar faces (with real matching), connections, meetup planner, profile and privacy settings, kiosk, owner dashboard, landing page.
+**Working:** sign-in, first-time onboarding, Explore, floor map, NFC/QR tags (table and entrance check-in), the room summary and shared interests on green tables, table lights and the box, conversations (the seated phone opens them automatically) and votes, familiar faces (with real matching), connections, meetup planner, profile and privacy settings, kiosk, owner dashboard, landing page.
 
 **Not done yet:**
 
 - **Rewards** (5 visits = a free drink, cafe passport). `recompute_rewards()` is still a placeholder, so the Rewards screen says it isn't available yet rather than showing made-up numbers.
 - **Staff-only access.** Any signed-in user can currently open the owner dashboard and change a table's status. This should be limited to venue staff.
+- **What gender is for.** Onboarding asks for it and stores it privately, but nothing uses it yet. The team is still deciding, for example an optional comfort setting.
 - **Confirmed meetups.** "See the plan" on a confirmed meetup opens a new, empty planner instead of showing the plan.
 
 ---
@@ -174,7 +186,7 @@ These are designed but not built yet.
 
 Chatter circle tables are for everyone, not just app users. Today anyone can see the light and sit at a green table. Next:
 
-- **A QR code that works in any phone camera.** It opens the table in the app if it's installed, or a simple web page if it isn't. That page explains the colours and lets people join from the browser, with nothing to download.
+- **A web page for people without the app.** Table QR codes already work in any phone camera: they open a small page that jumps into the app (and can link to the web version). Next, that page should explain the colours and let people join from the browser, with nothing to download.
 - **Join as a guest.** A first name and an "I agree to the house rules" tap, for one visit, with no account needed.
 - **A button on the box** so anyone can switch a table between green and red without a phone.
 - **Staff can turn on a table for a walk-in** from the kiosk.

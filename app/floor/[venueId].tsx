@@ -108,7 +108,8 @@ export default function FloorScreen() {
           busy={entering}
           error={enterError}
           onCheckIn={() => void checkIn()}
-          onSignIn={() => router.push('/sign-in')}
+          // Come back here after signing in; from the entrance tag, check in too.
+          onSignIn={() => router.push({ pathname: '/sign-in', params: { next: `/floor/${venueId}${here === '1' ? '?here=1' : ''}` } })}
         />
       </Card>
 

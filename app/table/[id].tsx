@@ -119,7 +119,7 @@ export default function TableScreen() {
             <ClaimTable
               busy={busy}
               signedIn={signedIn}
-              onSignIn={() => router.push('/sign-in')}
+              onSignIn={() => router.push({ pathname: '/sign-in', params: { next: `/table/${table.id}` } })}
               onClaim={(l) => run('claim', () => claimTable(table.id, l))}
             />
           ) : light === 'green' ? (

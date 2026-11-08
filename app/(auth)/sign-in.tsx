@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
-import { useState } from 'react';
+import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Text } from '@/components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,14 +12,32 @@ import { LightPole } from '@/components/LightPole';
 import { Button, Caption, ErrorNote } from '@/components/ui';
 import { DEMO_ACCOUNT_AVAILABLE, useSession } from '@/providers/SessionProvider';
 
+/**
+ * Where to go after signing in, from `?next=`. Only paths inside the app, so a
+ * crafted link can't send anyone off-site.
+ */
+function safeNext(raw: string | string[] | undefined): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : null;
+}
+
 /** Welcome (design kit v2, 2.1): logo, the lit pole, one instruction, sign in. */
 export default function SignIn() {
   const { session, signInWithAuth0, signInWithDemoAccount } = useSession();
+  const router = useRouter();
+  // "Sign in to claim" on a table sends ?next=/table/<id>: go back there, not home.
+  const next = safeNext(useLocalSearchParams<{ next?: string }>().next);
   const [busy, setBusy] = useState<null | 'auth0' | 'signup' | 'demo'>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  if (session) return <Redirect href="/" />;
+  // Back to the screen that sent us here (popping sign-in off the stack rather
+  // than stacking a second copy of it); home when there wasn't one.
+  useEffect(() => {
+    if (session && next) router.dismissTo(next as Href);
+  }, [session, next, router]);
+
+  if (session) return next ? null : <Redirect href="/" />;
 
   async function run(kind: 'auth0' | 'signup' | 'demo', fn: () => Promise<unknown>) {
     setBusy(kind);

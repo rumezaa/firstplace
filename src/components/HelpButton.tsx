@@ -7,13 +7,13 @@ import { colors } from '@/lib/theme';
 
 /**
  * The Help button: same place on every screen (top right), one tap away.
- * Hidden only on the Help screen itself and the venue's kiosk display.
+ * Hidden only on the Help screen itself.
  */
 export function HelpButton() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  if (pathname === '/help' || pathname.startsWith('/kiosk') || pathname.startsWith('/box')) return null;
+  if (pathname === '/help') return null;
 
   return (
     <Pressable
@@ -26,7 +26,7 @@ export function HelpButton() {
         position: 'absolute',
         top: insets.top + 6,
         right: 12,
-        height: 32,
+        height: 44,
         paddingLeft: 10,
         paddingRight: 12,
         borderRadius: 999,

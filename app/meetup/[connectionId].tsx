@@ -120,8 +120,9 @@ export default function MeetupScreen() {
       <View className="gap-1">
         <Title>{view.status === 'confirmed' ? `Your plan with ${name}` : `Plan with ${name}`}</Title>
         <Body>
-          Tick whatever works for you. {name} does the same, and we only ever show the times you
-          both picked.
+          {view.status === 'confirmed'
+            ? 'You both said yes. Here is the plan you agreed on.'
+            : `Tick whatever works for you. ${name} does the same, and we only ever show the times you both picked.`}
         </Body>
       </View>
 

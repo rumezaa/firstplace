@@ -173,12 +173,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(
     async (patch: UserProfileUpdate) => {
       if (!session) throw new Error('Not signed in.');
+      const generation = profileGeneration.current;
       // Optimistic: these are toggles and chips, they should feel instant.
       setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
       try {
-        setProfile(await api.patch<UserProfile>('/me', patch));
+        const updated = await api.patch<UserProfile>('/me', patch);
+        if (generation === profileGeneration.current) setProfile(updated);
       } catch (e) {
-        await refreshProfile(); // put the real value back
+        if (generation === profileGeneration.current) await refreshProfile(); // restore only this account
         throw e;
       }
     },

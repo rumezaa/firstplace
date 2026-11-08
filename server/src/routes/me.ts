@@ -1,3 +1,4 @@
+import { profileProblem } from '../profileValidation.js';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { requireAuth, type AuthVars } from '../auth.js';
@@ -23,6 +24,8 @@ me.get('/', async (c) => {
 
 me.patch('/', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+  const problem = profileProblem(body);
+  if (problem) throw new HTTPException(400, { message: problem });
   const sets: string[] = [];
   const values: unknown[] = [];
   for (const field of PROFILE_FIELDS) {

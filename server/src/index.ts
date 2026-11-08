@@ -4,7 +4,7 @@ import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
 import { logger } from 'hono/logger';
 import { issueDevToken, optionalAuth, type AuthVars } from './auth.js';
-import { asSystem, pool } from './db.js';
+import { asSystem, asUser, pool } from './db.js';
 import { env } from './env.js';
 import { startJobs } from './jobs.js';
 import { actions } from './routes/actions.js';
@@ -41,6 +41,29 @@ if (env.devLogin) {
 }
 
 app.route('/venues', venues);
+
+/**
+ * What a phone sees after tapping a box: the table, its venue and its light.
+ * Works signed out. Never says who is sitting there; `mine` is only ever
+ * about the caller's own claim.
+ */
+app.get('/tables/:tableId/view', async (c) => {
+  const id = c.req.param('tableId');
+  const view = await asUser(c.get('userId'), async (db) => {
+    const t = (await db.query(
+      `select t.id, t.label, t.seats, t.is_chat_table, t.box_enabled, v.id as venue_id, v.name as venue_name
+       from public.tables t join public.venues v on v.id = t.venue_id where t.id = $1`, [id])).rows[0];
+    if (!t) return null;
+    const light = (await db.query('select public.table_light($1) as l', [id])).rows[0].l as string;
+    const mine = c.get('userId')
+      ? (await db.query(
+          `select light, away_until from public.checkins where table_id = $1 and checked_out_at is null`, [id])).rows[0] ?? null
+      : null;
+    return { table: t, light, mine };
+  });
+  if (!view) throw new HTTPException(404, { message: "That table isn't a conversation zone." });
+  return c.json(view);
+});
 app.route('/me', me);
 app.route('/', conversations);
 app.route('/', actions);

@@ -6,6 +6,7 @@ import type { FamiliarFaceCard } from '@/lib/database.types';
 import { faceDetail, faceHeadline, faceState, fetchFamiliarFaces, respondToFamiliarFace } from '@/lib/familiarFaces';
 import { relativeDay } from '@/lib/format';
 import { errorMessage } from '@/lib/api';
+import { fetchConnections } from '@/lib/conversations';
 import { useAsync } from '@/hooks/useAsync';
 import { useSession } from '@/providers/SessionProvider';
 import {
@@ -50,6 +51,8 @@ export default function ConnectionsScreen() {
     <Screen
       refreshControl={<RefreshControl refreshing={faces.loading} onRefresh={() => void faces.reload()} />}
     >
+      <MyConnections />
+
       <View className="gap-1">
         <Title>Familiar faces</Title>
         <Body>
@@ -163,5 +166,30 @@ function FaceCard({
         />
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * People you met at a box and BOTH said it was a good conversation. Only the
+ * first name and what you share; photos and socials come later, by choice.
+ */
+function MyConnections() {
+  const connections = useAsync(fetchConnections, []);
+  const list = connections.data ?? [];
+  if (list.length === 0) return null;
+  return (
+    <View className="gap-3">
+      <Title>Your connections</Title>
+      {list.map((c) => {
+        const common = [...new Set([...c.shared.interests, ...c.shared.topics])].slice(0, 4);
+        return (
+          <Card key={c.id} accent="sage" className="gap-2">
+            <SectionTitle>{c.first_name ?? 'A new friend'}</SectionTitle>
+            {c.venue_name ? <Caption>Met at {c.venue_name} · {relativeDay(c.created_at)}</Caption> : null}
+            {common.length ? <Body>You both like {common.join(', ')}.</Body> : null}
+          </Card>
+        );
+      })}
+    </View>
   );
 }

@@ -393,10 +393,17 @@ declare
   v_other uuid;
   v_me_seated boolean;
 begin
-  select * into v_conv from public.conversations
-  where auth.uid() in (seated_user, joiner_user)
-    and (p_id is null and ended_at is null or id = p_id)
-  order by started_at desc limit 1;
+  -- No id: the live conversation, or else one that just ended and still needs
+  -- my private vote (so it isn't lost when the OTHER person ends it).
+  select * into v_conv from public.conversations cv
+  where auth.uid() in (cv.seated_user, cv.joiner_user)
+    and (
+      (p_id is null and (
+         cv.ended_at is null
+         or (cv.ended_at > now() - interval '15 minutes'
+             and (case when cv.seated_user = auth.uid() then cv.seated_vote else cv.joiner_vote end) is null)))
+      or cv.id = p_id)
+  order by (cv.ended_at is null) desc, cv.started_at desc limit 1;
   if not found then return null; end if;
 
   v_me_seated := v_conv.seated_user = v_user;

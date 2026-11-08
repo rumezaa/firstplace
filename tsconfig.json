@@ -3,7 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -13,5 +15,9 @@
     "expo-env.d.ts",
     "nativewind-env.d.ts",
     "app-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "server"
   ]
 }

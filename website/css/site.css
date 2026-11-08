@@ -58,6 +58,7 @@ a { color: inherit; }
 }
 .btn:hover { background: var(--peach); }
 .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.site-header.is-solid { box-shadow: 0 4px 0 var(--mint); }
 
 /* Cards */
 .card {
@@ -100,7 +101,7 @@ a { color: inherit; }
   .panel--tr .card { right: 48px; top: calc(var(--header-h) + 32px); }
   .panel--tl .card { left: 48px; top: calc(var(--header-h) + 32px); }
   .panel--br .card { right: 48px; bottom: 40px; }
-  .panel--tc .card { left: 50%; transform: translateX(-50%); top: calc(var(--header-h) + 32px); max-width: min(520px, 60vw); }
+  .panel--tc .card { left: 0; right: 0; margin: 0 auto; width: max-content; top: calc(var(--header-h) + 32px); max-width: min(520px, 60vw); }
   .hero-head {
     position: absolute; z-index: 2; left: 48px; top: calc(var(--header-h) + 32px);
     padding: 16px 22px; max-width: min(460px, 45vw);
@@ -108,6 +109,12 @@ a { color: inherit; }
   }
   .scroll-hint { position: absolute; z-index: 2; left: 50%; bottom: 24px; transform: translateX(-50%); margin: 0; }
 }
+
+/* Motion: only applied once main.js has added .js, so content is visible without it */
+.js .reveal { opacity: 0; transform: translateY(16px); }
+.reveal.is-in { opacity: 1; transform: none; transition: 500ms ease 150ms; }
+.js .panel img { transform: scale(1.06); transition: transform 700ms ease; }
+.js .panel.is-in img { transform: scale(1); }
 
 /* Bands */
 .band { padding: 64px var(--gutter); border-top: 3px solid var(--ink); scroll-snap-align: start; }
@@ -126,4 +133,6 @@ a { color: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-snap-type: none; scroll-behavior: auto; }
+  .js .reveal, .js .reveal.is-in { opacity: 1; transform: none; transition: none; }
+  .js .panel img, .js .panel.is-in img { transform: none; transition: none; }
 }

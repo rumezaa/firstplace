@@ -98,3 +98,81 @@ test('name', () => {
   assert.ok(!/first\s?place/i.test(html()));
   assert.ok(!/Third Place/.test(html()));
 });
+
+// ---- Task 3: motion and header state ----
+const CSS_PATH = path.join(ROOT, 'css', 'site.css');
+const JS_PATH = path.join(ROOT, 'js', 'main.js');
+const css = () => fs.readFileSync(CSS_PATH, 'utf8');
+
+// Innermost rules only (selector + body); @media wrappers are skipped.
+function cssRules() {
+  const src = css().replace(/\/\*[\s\S]*?\*\//g, '');
+  const out = [];
+  const re = /([^{}]+)\{([^{}]*)\}/g;
+  let m;
+  while ((m = re.exec(src))) out.push({ selector: m[1].trim(), body: m[2] });
+  return out;
+}
+
+// Body text of the first balanced {...} block at or after idx.
+function blockAfter(text, idx) {
+  const open = text.indexOf('{', idx);
+  if (open < 0) return null;
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}' && --depth === 0) return text.slice(open + 1, i);
+  }
+  return null;
+}
+
+function mediaBlocks(query) {
+  const text = css();
+  const out = [];
+  let idx = text.indexOf(query);
+  while (idx >= 0) {
+    const b = blockAfter(text, idx);
+    if (b) out.push(b);
+    idx = text.indexOf(query, idx + 1);
+  }
+  return out;
+}
+
+test('content visible without js', () => {
+  const hiding = cssRules().filter(
+    (r) => /\.reveal\b/.test(r.selector) && /opacity\s*:\s*0\b|visibility\s*:\s*hidden|display\s*:\s*none/.test(r.body)
+  );
+  assert.ok(hiding.length > 0, 'expected a hidden-state rule for .reveal');
+  for (const r of hiding) {
+    assert.match(r.selector, /(^|\s)\.js\b/, `unprefixed hiding rule: ${r.selector}`);
+  }
+});
+
+test('reduced motion block', () => {
+  const reveal = mediaBlocks('prefers-reduced-motion: reduce').find((b) => /\.reveal\b/.test(b));
+  assert.ok(reveal, 'no reduced-motion block mentions .reveal');
+  assert.match(reveal, /opacity\s*:\s*1/);
+  assert.match(reveal, /transition\s*:\s*none/);
+  assert.match(reveal, /img/, 'reduced-motion block should also remove the panel image scale');
+});
+
+test('scripts are classic defer', () => {
+  const tags = html().match(/<script\b[^>]*>/g) || [];
+  assert.ok(tags.some((t) => /src="js\/main\.js"/.test(t)), 'js/main.js is not loaded');
+  for (const t of tags) {
+    assert.match(t, /\bdefer\b/, t);
+    assert.doesNotMatch(t, /type="module"/, t);
+  }
+});
+
+test('main.js is classic, guarded, and leaves tabs to Task 4', () => {
+  assert.ok(fs.existsSync(JS_PATH), 'js/main.js missing');
+  const js = fs.readFileSync(JS_PATH, 'utf8');
+  assert.doesNotMatch(js, /^\s*(import|export)\s/m);
+  assert.match(js, /classList\.add\('js'\)/);
+  assert.match(js, /'IntersectionObserver' in window/);
+  assert.match(js, /threshold:\s*0\.35/);
+  assert.match(js, /is-solid/);
+  assert.match(js, /legend/);
+  assert.doesNotMatch(js, /initTabs/);
+});

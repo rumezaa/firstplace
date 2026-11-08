@@ -22,7 +22,7 @@ if '--api' in sys.argv:
 VENUE = 'c0ffee00-0000-4000-8000-0000000000f3'
 T = 'f3f3f3f3-0000-4000-8000-0000000000'
 SEATS = [  # (student, table, light). Seated people are green or red; every empty seat shows yellow (free).
-    ('priya', T + '03', 'green'),   # 354 · South
+    ('priya', T + '05', 'green'),   # 352 · Window (well away from the box's table)
     # 354 · Window (T + '01', the physical box) is left free for REAL people:
     # someone sits there from their own phone and you connect with them.
     ('jordan', T + '04', 'red'),    # 352 · Corner

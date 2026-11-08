@@ -155,7 +155,7 @@ async function libraries(): Promise<Place[]> {
 }
 
 async function community(): Promise<Place[]> {
-  const rows = await soda('x34e-bcjz', { $where: "type in ('Attraction','Community Centre','Visitor Info')" });
+  const rows = await soda('x34e-bcjz', { $where: "type in ('Attraction','Community Centre')" });
   return rows.flatMap((r): Place[] => {
     const at = point(r.point);
     if (!at || !clean(r.name)) return [];
@@ -358,8 +358,29 @@ export function contextBlock(list: RetrievedPlace[], day?: string): string {
   }).join('\n');
 }
 
+/** Mostly outside? Parks, outdoor art, and the open-air recreation sites. */
+export function isOutdoor(p: Place): boolean {
+  if (p.kind === 'park') return true;
+  if (p.kind === 'public art') return !/plus 15|\+15|lobby|atrium|interior|inside/i.test(`${p.address ?? ''} ${p.summary ?? ''}`);
+  if (p.kind === 'recreation') return /skate park|outdoor|spray|athletic|golf|sailing|turf/i.test(p.category);
+  return false;
+}
+
+/**
+ * Opening hours on a weekday as minutes since midnight, `closed` if the source
+ * lists no hours that day, or null when the source has no hours at all.
+ */
+export function openingHours(p: Place, weekday: string): { open: number; close: number } | 'closed' | null {
+  if (!p.hours) return null;
+  const h = p.hours[weekday];
+  if (!h) return 'closed';
+  const m = h.match(/^(\d{1,2}):(\d{2})–(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  return { open: Number(m[1]) * 60 + Number(m[2]), close: Number(m[3]) * 60 + Number(m[4]) };
+}
+
 /** Public shape for the app: no scoring internals. */
 export function toPublic(p: RetrievedPlace) {
   const { keywords: _k, score: _s, ...rest } = p;
-  return rest;
+  return { ...rest, outdoor: isOutdoor(p) };
 }

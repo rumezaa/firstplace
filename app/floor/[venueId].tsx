@@ -131,6 +131,9 @@ function FloorMap({
       style={{
         aspectRatio: layout.aspect,
         width: '100%',
+        // Phone-sized on laptops and tablets too, so the whole floor fits on screen.
+        maxWidth: 420,
+        alignSelf: 'center',
         borderRadius: 16,
         borderWidth: 1,
         borderColor: colors.border,

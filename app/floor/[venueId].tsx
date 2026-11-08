@@ -1,6 +1,6 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Pressable, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, Pressable, Text, View } from 'react-native';
 import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 import { LIGHT_INFO, fetchFloor, type BoxLight, type FloorTable } from '@/lib/conversations';
@@ -193,7 +193,7 @@ function PlanDrawing({ plan, labels }: { plan: FloorPlan; labels: { text: string
       style={{ position: 'absolute', top: 0, left: 0 }}
       // Decoration only: the markers and the list carry everything for screen readers.
       pointerEvents="none"
-      importantForAccessibility="no-hide-descendants"
+      {...(Platform.OS === 'web' ? { 'aria-hidden': true } : { importantForAccessibility: 'no-hide-descendants' as const })}
     >
       {/* Shadow, then the floor and its wall */}
       <Path d={plan.outline} fill="#000" opacity={0.06} transform="translate(4 6)" />

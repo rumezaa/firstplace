@@ -52,7 +52,7 @@ light = lambda t: req('GET', f'/hw/tables/{t}/state', key=KEY)[1]['light']
 # ---------------------------------------------------------------- floor ---
 s, fl = req('GET', f'/venues/{FLOOR}/floor')
 ok(s == 200 and len(fl) == 3 and all(t['light'] == 'off' for t in fl), 'signed-out floor: three tables, all off')
-ok(all(set(t) == {'id', 'label', 'seats', 'is_chat_table', 'box_enabled', 'light', 'mine'} for t in fl),
+ok(all(set(t) == {'id', 'label', 'seats', 'is_chat_table', 'box_enabled', 'light', 'mine', 'pos_x', 'pos_y'} for t in fl),
    'floor never exposes who sits where (only colour fields)')
 s, fl = req('GET', '/venues/00000000-0000-4000-8000-000000000000/floor')
 ok(s == 200 and fl == [], 'unknown floor is an empty list, not an error')

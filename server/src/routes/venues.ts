@@ -141,6 +141,8 @@ venues.get('/:id/floor', async (c) => {
   const rows = await asUser(c.get('userId'), (db) =>
     db.query(
       `select t.id, t.label, t.seats, t.is_chat_table, t.box_enabled,
+              -- Read through jsonb so this works before 140_floor_positions is applied.
+              (to_jsonb(t)->>'pos_x')::real as pos_x, (to_jsonb(t)->>'pos_y')::real as pos_y,
               public.table_light(t.id) as light,
               exists (select 1 from public.checkins k
                       where k.table_id = t.id and k.checked_out_at is null

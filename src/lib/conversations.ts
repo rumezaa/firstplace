@@ -149,5 +149,8 @@ export interface FloorTable {
   box_enabled: boolean;
   light: BoxLight;
   mine: boolean;
+  /** 0..1 across the floor outline; null = not placed on the map. */
+  pos_x: number | null;
+  pos_y: number | null;
 }
 export const fetchFloor = (venueId: string) => api.get<FloorTable[]>(`/venues/${venueId}/floor`);

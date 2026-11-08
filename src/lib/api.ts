@@ -22,9 +22,35 @@ function resolveApiUrl(): string | null {
   if (configured) return configured.replace(/\/+$/, '');
   if (!__DEV__) return null;
 
-  const hostUri = Constants.expoConfig?.hostUri; // e.g. "192.168.1.20:8081"
-  const host = hostUri?.split(':')[0];
+  const host = devServerHost();
   return `http://${host || 'localhost'}:${API_PORT}`;
+}
+
+/**
+ * The address of the computer running Expo, as the phone sees it. Expo Go
+ * exposes it in different fields depending on the SDK, so try each:
+ * expoConfig.hostUri, expoGoConfig.debuggerHost, then the experience URL
+ * ("exp://172.20.10.2:8081"). On the web, the page's own hostname.
+ */
+function devServerHost(): string | null {
+  const c = Constants as unknown as {
+    expoConfig?: { hostUri?: string };
+    expoGoConfig?: { debuggerHost?: string };
+    experienceUrl?: string;
+    linkingUri?: string;
+  };
+  const candidates = [
+    c.expoConfig?.hostUri,
+    c.expoGoConfig?.debuggerHost,
+    c.experienceUrl?.replace(/^[a-z]+:\/\//, ''),
+    c.linkingUri?.replace(/^[a-z]+:\/\//, ''),
+  ];
+  for (const raw of candidates) {
+    const host = raw?.split('/')[0]?.split(':')[0];
+    if (host && host !== 'localhost' && host !== '127.0.0.1') return host;
+  }
+  if (typeof window !== 'undefined' && window.location?.hostname) return window.location.hostname;
+  return null;
 }
 
 export const API_URL = resolveApiUrl();
@@ -90,6 +116,7 @@ export function errorHint(error: unknown): string | null {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   if (!API_URL) throw new ApiError(apiConfigProblem ?? 'API not configured.', 0);
 
+  const requestToken = accessToken;
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -97,19 +124,24 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       headers: {
         Accept: 'application/json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...(requestToken ? { Authorization: `Bearer ${requestToken}` } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new ApiError("Can't reach FirstPlace right now. Check your connection.", 0);
+    throw new ApiError(
+      __DEV__
+        ? `Can't reach FirstPlace at ${API_URL}. Check that the API server is running and on the same network.`
+        : "Can't reach FirstPlace right now. Check your connection.",
+      0,
+    );
   }
 
   const text = await res.text();
   const data = text ? safeJson(text) : null;
 
   if (!res.ok) {
-    if (res.status === 401 && accessToken) onUnauthorized?.();
+    if (res.status === 401 && requestToken && requestToken === accessToken) onUnauthorized?.();
     const err = (data ?? {}) as { error?: string; hint?: string | null };
     throw new ApiError(err.error ?? `Request failed (${res.status}).`, res.status, err.hint ?? null);
   }

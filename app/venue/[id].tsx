@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { RefreshControl, View } from 'react-native';
 
@@ -10,13 +10,16 @@ import {
   fetchTables,
   fetchVenue,
   fetchVenueLiveOne,
+  fetchVenueVibe,
 } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
+import { FLOOR_LAYOUTS } from '@/lib/floorLayouts';
 import { ChatTableNote, TableGrid, TableGridLegend } from '@/components/TableGrid';
 import {
   Badge,
   Body,
+  Button,
   Caption,
   Card,
   ErrorNote,
@@ -30,12 +33,15 @@ import {
 export default function VenueScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const venueId = String(id);
+  const router = useRouter();
 
   const venue = useAsync(() => fetchVenue(venueId), [venueId]);
   const live = useAsync(() => fetchVenueLiveOne(venueId), [venueId]);
   const tables = useAsync(() => fetchTables(venueId), [venueId]);
   const busy = useAsync(() => fetchBusyHours(venueId), [venueId]);
   const crowd = useAsync(() => fetchCrowdTags(venueId), [venueId]);
+  // Gemini line from live aggregates; falls back to the venue's own description.
+  const vibe = useAsync(() => fetchVenueVibe(venueId).catch(() => null), [venueId]);
 
   const refresh = useCallback(() => {
     void live.reload();
@@ -68,7 +74,10 @@ export default function VenueScreen() {
     );
   }
 
-  const l = live.data;
+  const l = live.error ? null : live.data;
+  // Without Gemini the server falls back to insider_info, which has its own
+  // card below. Use the venue's summary instead so nothing shows twice.
+  const vibeText = vibe.data && vibe.data !== v.insider_info ? vibe.data : v.vibe_summary;
   const presentation = AVAILABILITY[l?.availability ?? 'open'];
   const openToChat = l?.people_open_to_chat ?? 0;
   const rows = tables.data ?? [];
@@ -86,13 +95,17 @@ export default function VenueScreen() {
         {v.address ? <Caption>{v.address}</Caption> : null}
       </View>
 
+      {FLOOR_LAYOUTS[v.id] ? (
+        // Same screen the NFC tag at the entrance opens.
+        <Button label="See the floor" onPress={() => router.push(`/floor/${v.id}`)} />
+      ) : null}
+
+      {live.error ? <ErrorNote error={live.error} onRetry={() => void live.reload()} /> : null}
       <View className="flex-row flex-wrap items-center gap-2">
         <Badge
-          label={presentation.label}
-          tone={
-            l?.availability === 'full' ? 'full' : l?.availability === 'filling_up' ? 'filling' : 'open'
-          }
-          accessibilityLabel={presentation.a11y}
+          label={l ? presentation.label : 'Live status unavailable'}
+          tone="neutral"
+          accessibilityLabel={l ? presentation.a11y : 'Live status unavailable'}
         />
         {l?.chat_table_active ? <Badge label="Chat table active" tone="chat" /> : null}
         {v.is_quiet ? <Badge label="Quiet" /> : null}
@@ -100,10 +113,10 @@ export default function VenueScreen() {
         <Badge label={v.type === 'study' ? 'Study space' : v.type === 'cafe' ? 'Cafe' : 'Social space'} />
       </View>
 
-      {v.vibe_summary ? (
+      {vibeText ? (
         <Card className="gap-2">
-          <SectionTitle>The vibe</SectionTitle>
-          <Body>{v.vibe_summary}</Body>
+          <SectionTitle>What it&apos;s like right now</SectionTitle>
+          <Body>{vibeText}</Body>
         </Card>
       ) : null}
 
@@ -112,7 +125,7 @@ export default function VenueScreen() {
       <Card accent={openToChat > 0 ? 'berry' : undefined} className="gap-2">
         <SectionTitle>Open to chat right now</SectionTitle>
         <Body>
-          {openToChat === 0
+          {!l ? 'Live information is unavailable. Try refreshing.' : openToChat === 0
             ? 'Nobody has flagged themselves as open to chat yet. You could be the first.'
             : `${people(openToChat)} here said they are happy to be talked to.`}
         </Body>
@@ -152,11 +165,12 @@ export default function VenueScreen() {
       <Card className="gap-3">
         <View className="flex-row items-baseline justify-between">
           <SectionTitle>Tables</SectionTitle>
-          <Caption>{tablesSummary(l?.open_tables ?? 0, l?.total_tables ?? 0)}</Caption>
+          {l ? <Caption>{tablesSummary(l.open_tables, l.total_tables)}</Caption> : null}
         </View>
         <TableGridLegend hasChatTable={Boolean(l?.has_chat_table)} />
         {tables.loading && rows.length === 0 ? <Loading label="Reading the room" /> : null}
-        <TableGrid tables={rows} />
+        {tables.error ? <ErrorNote error={tables.error} onRetry={() => void tables.reload()} /> : <TableGrid tables={rows} />}
+        {!tables.loading && !tables.error && rows.length === 0 ? <Body>No tables are listed yet.</Body> : null}
         {l?.has_chat_table ? <ChatTableNote /> : null}
       </Card>
 
@@ -183,21 +197,18 @@ export default function VenueScreen() {
       <Card className="gap-3">
         <SectionTitle>Going in?</SectionTitle>
         <Body>
-          Scan the QR code at the counter to claim a table. Pick the chat table if you would like
-          company.
+          Tap your phone on the box at any conversation table, or scan the code on its side. Green
+          means say hi; yellow means ask in the app.
         </Body>
-        <Link href="/checkin" className="text-clay text-base font-semibold">
-          Open the scanner
-        </Link>
+        <Button label="Find a table" onPress={() => router.push('/checkin')} />
       </Card>
 
-      <Link
-        href={`/dashboard/${v.id}`}
-        className="text-mocha pt-2 text-center text-xs"
-        accessibilityLabel={`Owner dashboard for ${v.name}`}
-      >
-        Cafe owner? See the anonymous dashboard
-      </Link>
+      <Button
+        label="Owner dashboard"
+        variant="quiet"
+        accessibilityHint={`Opens the anonymous owner dashboard for ${v.name}`}
+        onPress={() => router.push(`/dashboard/${v.id}`)}
+      />
     </Screen>
   );
 }

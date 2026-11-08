@@ -1,6 +1,6 @@
 import '../global.css';
 
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,7 +23,8 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { initializing } = useSession();
+  const { initializing, session } = useSession();
+  const segments = useSegments();
 
   // A fresh clone with no .env would otherwise show a stack of network errors.
   if (!isApiConfigured) return <ApiNotConfigured problem={apiConfigProblem} />;
@@ -36,8 +37,11 @@ function RootNavigator() {
     );
   }
 
+  const protectedRoutes = ['meetup', 'dashboard', 'waiting', 'conversation', 'rewards'];
+  if (!session && protectedRoutes.includes(segments[0] ?? '')) return <Redirect href="/sign-in" />;
+
   return (
-    <View style={{ flex: 1 }}>
+    <View key={session?.token ?? 'guest'} style={{ flex: 1 }}>
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.cream },
@@ -58,7 +62,9 @@ function RootNavigator() {
       <Stack.Screen name="table/[id]" options={{ title: '' }} />
       <Stack.Screen name="waiting/[requestId]" options={{ title: 'Request sent' }} />
       <Stack.Screen name="conversation" options={{ title: 'In conversation' }} />
+      <Stack.Screen name="meetup/[connectionId]" options={{ title: 'Plan the next one' }} />
       <Stack.Screen name="box/[tableId]" options={{ headerShown: false }} />
+      <Stack.Screen name="rewards" options={{ title: '' }} />
       <Stack.Screen name="help" options={{ title: 'Help', presentation: 'modal' }} />
       <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
     </Stack>

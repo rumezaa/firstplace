@@ -4,6 +4,22 @@ import { pgConfig } from './pgConfig.js';
 
 export const pool = new pg.Pool({ ...pgConfig(env.databaseUrl), max: 10 });
 
+// An idle connection can die underneath us (laptop changes Wi-Fi, Tiger
+// restarts). pg reports that as an 'error' event on the pool; without a
+// listener Node treats it as fatal and the whole API exits. Log it instead:
+// the pool drops that client and opens a fresh one on the next query.
+pool.on('error', (err) => {
+  console.warn('[db] idle connection lost, will reconnect:', err.message);
+});
+// A connection that's checked out (mid-request or mid-job) reports the same
+// failure on the client itself, not the pool. Give every client a listener so
+// that also becomes a failed request, not a crashed server.
+pool.on('connect', (client) => {
+  client.on('error', (err) => {
+    console.warn('[db] connection lost during a query:', err.message);
+  });
+});
+
 export type Db = pg.PoolClient;
 
 /**

@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
 
 import { hourLabel } from '@/lib/format';
@@ -53,11 +53,15 @@ export default function DashboardScreen() {
     <Screen
       refreshControl={<RefreshControl refreshing={dash.loading} onRefresh={() => void dash.reload()} />}
     >
+      <Stack.Screen options={{ title: '' }} />
       <View className="gap-1">
-        <Title>{venue.data?.name ?? 'Venue'}</Title>
+        <Title>Venue dashboard</Title>
+        <Body>{venue.data?.name ?? 'Your venue'}</Body>
         <Caption>Last {data?.days ?? 30} days · anonymous aggregates only</Caption>
       </View>
 
+      {venue.error ? <ErrorNote error={venue.error} onRetry={() => void venue.reload()} /> : null}
+      {!data ? <Body>No dashboard data is available yet.</Body> : null}
       {data?.suppressed ? (
         <Card accent="amber" className="gap-3">
           <SectionTitle>Not enough visitors to show anything yet</SectionTitle>
@@ -94,7 +98,7 @@ export default function DashboardScreen() {
             <SectionTitle>Chat table</SectionTitle>
             <View className="flex-row flex-wrap gap-2">
               <Badge label={`${data.chat_table_visits} chat table check-ins`} tone="chat" />
-              <Badge label={`${data.open_to_chat_visits} open to chat`} tone="open" />
+              <Badge label={`${data.open_to_chat_visits} open to chat`} tone="chat" />
             </View>
             <Body>
               {data.chat_table_visits === 0

@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { requireAuth, type AuthVars } from '../auth.js';
-import { asUser } from '../db.js';
-import { generate, parseStringList } from '../gemini.js';
+import { asSystem, asUser } from '../db.js';
+import { icebreakers } from '../rag.js';
 
 // The PRD's core loop: claim a table → set a light → someone joins (green) or
 // requests (yellow) → talk with shared topics → private vote → connection.
@@ -62,6 +62,7 @@ conversations.get('/me/requests', async (c) => {
 
 conversations.post('/requests/:id/respond', async (c) => {
   const { accept, minutes = 30 } = await body<{ accept?: boolean; minutes?: number }>(c);
+  if (typeof accept !== 'boolean') throw new HTTPException(400, { message: 'accept must be true or false.' });
   return c.json(
     await rpc(c.get('userId'), 'public.respond_to_request($1, $2, $3)', [c.req.param('id'), Boolean(accept), minutes]),
   );
@@ -84,21 +85,32 @@ conversations.get('/me/conversation/topics', async (c) => {
   );
   if (!conv) throw new HTTPException(404, { message: 'No conversation in progress.' });
 
-  const words = [...conv.shared.interests, ...conv.shared.topics];
-  const text = await generate(
-    `topics:${conv.id}`,
-    `Two adults just sat down for a friendly first conversation at a Calgary cafe or library table. ` +
-      `Topics they both like: ${words.length ? words.join(', ') : 'none listed'}. ` +
-      `Write 4 short, warm, open-ended conversation prompts (one line each), friendship-focused, never romantic. ` +
-      `Reply as a JSON array of 4 strings.`,
-    60 * 60_000,
-    { json: true },
-  );
-  const prompts = parseStringList(text, 4);
+  // Venue only (public data). my_conversation already proved the caller is in
+  // this conversation, so reading its venue_id as the system is safe.
+  const venue = (
+    await asSystem((db) =>
+      db.query(
+        `select v.name, v.type, v.lat, v.lng
+         from public.conversations cv join public.venues v on v.id = cv.venue_id where cv.id = $1`,
+        [conv.id],
+      ),
+    )
+  ).rows[0] ?? null;
+
+  const res = await icebreakers({
+    cacheKey: `topics:${conv.id}`,
+    who: c.get('userId')!,
+    shared: conv.shared,
+    venue,
+    count: 4,
+    mode: 'questions',
+  });
   return c.json({
     shared: conv.shared,
-    prompts: prompts.length ? prompts : ['What brought you here today?', 'What have you been into lately?'],
-    generated: prompts.length > 0,
+    prompts: res.lines.length ? res.lines : ['What brought you here today?', 'What have you been into lately?'],
+    generated: res.lines.length > 0,
+    aiStatus: res.status,
+    retryAfterSec: res.retryAfterSec ?? null,
   });
 });
 

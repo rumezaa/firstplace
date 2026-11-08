@@ -1,28 +1,29 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { APP_NAME, APP_PITCH, APP_TAGLINE } from '@/lib/branding';
 import { errorMessage } from '@/lib/api';
-import { Body, Button, Caption, Card, ErrorNote, Screen, SectionTitle, Title } from '@/components/ui';
-import {
-  AUTH0_AVAILABLE,
-  AUTH0_REDIRECT_URI,
-  DEMO_ACCOUNT_AVAILABLE,
-  useSession,
-} from '@/providers/SessionProvider';
+import { AUTH0_AVAILABLE, AUTH0_REDIRECT_URI } from '@/lib/auth0';
+import { colors } from '@/lib/theme';
+import { Wordmark } from '@/components/AppMark';
+import { LightPole } from '@/components/LightPole';
+import { Button, Caption, ErrorNote } from '@/components/ui';
+import { DEMO_ACCOUNT_AVAILABLE, useSession } from '@/providers/SessionProvider';
 
+/** Welcome (design kit v2, 2.1): logo, the lit pole, one instruction, sign in. */
 export default function SignIn() {
   const { session, signInWithAuth0, signInWithDemoAccount } = useSession();
-
-  const [busy, setBusy] = useState<null | 'auth0' | 'demo'>(null);
+  const [busy, setBusy] = useState<null | 'auth0' | 'signup' | 'demo'>(null);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   if (session) return <Redirect href="/" />;
 
-  async function run(kind: 'auth0' | 'demo', fn: () => Promise<void>) {
+  async function run(kind: 'auth0' | 'signup' | 'demo', fn: () => Promise<unknown>) {
     setBusy(kind);
     setError(null);
+    setNote(null);
     try {
       await fn();
     } catch (e) {
@@ -32,57 +33,78 @@ export default function SignIn() {
     }
   }
 
+  // Closing the Auth0 window reaches us as a plain dismissal. Usually that's
+  // just someone changing their mind, so say so kindly. A rejected callback
+  // address looks the same from here; the dev-only line at the bottom shows the
+  // address to register in Auth0 for that case.
+  async function startAuth0(signUp = false) {
+    const outcome = await signInWithAuth0({ signUp });
+    if (outcome === 'dismissed') setNote(signUp ? 'Sign-up was closed. Tap Create an account to try again.' : 'Sign-in was closed. Tap a button to try again.');
+  }
+
   return (
-    <Screen>
-      <View className="gap-2 pb-2 pt-10">
-        <Title>{APP_NAME}</Title>
-        <Body>{APP_TAGLINE}</Body>
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
+      {/* Scrolls on short phones, so messages push the buttons down instead of hiding behind them. */}
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 20 }}>
+        <Wordmark size={20} />
+        {/* The pole shrinks to md so it never collides with the headline on shorter phones. */}
+        <View style={{ flex: 1, minHeight: 200, alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}>
+          <LightPole light="green" size="md" />
+        </View>
+        <Text
+          accessibilityRole="header"
+          style={{ fontSize: 34, lineHeight: 41, fontWeight: '700', letterSpacing: -0.7, color: colors.espresso }}
+        >
+          When the light&apos;s green, say hi.
+        </Text>
+        <Text style={{ fontSize: 17, lineHeight: 23, color: colors.mocha, marginTop: 8 }}>
+          FirstPlace tables show who&apos;s open to talk. No profiles to scroll, just people nearby.
+        </Text>
+        {error ? (
+          <View style={{ marginTop: 16 }}>
+            <ErrorNote error={error} />
+          </View>
+        ) : null}
+        {note ? (
+          <View style={{ marginTop: 16 }} accessibilityLiveRegion="polite">
+            <Caption>{note}</Caption>
+          </View>
+        ) : null}
+      </ScrollView>
 
-      <Card className="gap-4">
-        <SectionTitle>Sign in</SectionTitle>
-        <Body>{APP_PITCH}</Body>
-
+      <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24, gap: 8 }}>
         {AUTH0_AVAILABLE ? (
           <Button
-            label="Continue"
-            accessibilityHint="Opens a secure sign-in page. You can use Google or your email."
-            busy={busy === 'auth0'}
-            onPress={() => run('auth0', signInWithAuth0)}
+            label="Create an account"
+            accessibilityHint="Opens a secure sign-up page. You can use Google or your email."
+            busy={busy === 'signup'}
+            onPress={() => run('signup', () => startAuth0(true))}
           />
-        ) : (
-          <Caption>
-            Secure sign-in (Auth0) isn&apos;t set up yet. Add EXPO_PUBLIC_AUTH0_DOMAIN,
-            EXPO_PUBLIC_AUTH0_CLIENT_ID and EXPO_PUBLIC_AUTH0_AUDIENCE to .env.
-          </Caption>
-        )}
-
-        {__DEV__ && AUTH0_AVAILABLE ? (
-          <Caption>Auth0 callback URL for this device: {AUTH0_REDIRECT_URI}</Caption>
         ) : null}
-      </Card>
-
-      {DEMO_ACCOUNT_AVAILABLE ? (
-        <Card accent="amber" className="gap-3">
-          <SectionTitle>Demo account</SectionTitle>
-          <Caption>
-            Signs in as the seeded demo user, so a live demo never depends on a sign-in page.
-            Remove EXPO_PUBLIC_DEMO_EMAIL from .env to hide this.
-          </Caption>
+        {AUTH0_AVAILABLE ? (
           <Button
-            label="Continue as demo user"
-            variant="quiet"
+            label="I already have an account"
+            variant="secondary"
+            accessibilityHint="Opens a secure sign-in page."
+            busy={busy === 'auth0'}
+            onPress={() => run('auth0', () => startAuth0())}
+          />
+        ) : null}
+        {DEMO_ACCOUNT_AVAILABLE ? (
+          <Button
+            label="Try the demo account"
+            variant={AUTH0_AVAILABLE ? 'quiet' : 'primary'}
             busy={busy === 'demo'}
             onPress={() => run('demo', signInWithDemoAccount)}
           />
-        </Card>
-      ) : null}
-
-      {error ? <ErrorNote error={error} /> : null}
-
-      <Caption className="px-2 text-center">
-        We never show other people where you are. Check-ins are only ever counted, never named.
-      </Caption>
-    </Screen>
+        ) : null}
+        <Caption className="text-center">For adults 18 and over in Calgary.</Caption>
+        {__DEV__ && AUTH0_AVAILABLE ? (
+          <Caption className="text-center">
+            <Text selectable>Dev: Auth0 callback {AUTH0_REDIRECT_URI}</Text>
+          </Caption>
+        ) : null}
+      </View>
+    </SafeAreaView>
   );
 }

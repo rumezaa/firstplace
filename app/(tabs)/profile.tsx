@@ -41,6 +41,9 @@ const INTEREST_SUGGESTIONS = [
   'grad school',
 ];
 
+const TOPIC_SUGGESTIONS = ['hiking', 'board games', 'Calgary food', 'music', 'books', 'travel', 'coffee', 'running', 'tech', 'art'];
+const LANGUAGE_SUGGESTIONS = ['English', 'French', 'Punjabi', 'Tagalog', 'Mandarin', 'Cantonese', 'Spanish', 'Arabic', 'Urdu', 'Hindi'];
+
 const VIBE_SUGGESTIONS = [
   'quiet worker',
   'laptop crowd',
@@ -55,6 +58,8 @@ const VIBE_SUGGESTIONS = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, session, updateProfile, signOut } = useSession();
+  // PRD profile fields not yet in the generated types.
+  const extra = (profile ?? {}) as { topics?: string[]; languages?: string[] };
   const history = useAsync(() => fetchCheckinHistory(20), []);
   const venues = useAsync(fetchVenues, []);
 
@@ -133,6 +138,36 @@ export default function ProfileScreen() {
       </Card>
 
       <Card className="gap-3">
+        <SectionTitle>Topics you like</SectionTitle>
+        <Caption>People only ever see the ones you share with them.</Caption>
+        <View className="flex-row flex-wrap gap-2">
+          {Array.from(new Set([...(extra.topics ?? []), ...TOPIC_SUGGESTIONS])).map((topic) => (
+            <Chip
+              key={topic}
+              label={topic}
+              selected={(extra.topics ?? []).includes(topic)}
+              onPress={() => void save({ topics: toggleIn(extra.topics ?? [], topic) } as never)}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Card className="gap-3">
+        <SectionTitle>Languages</SectionTitle>
+        <Caption>Shown to the person you&apos;re talking with.</Caption>
+        <View className="flex-row flex-wrap gap-2">
+          {Array.from(new Set([...(extra.languages ?? []), ...LANGUAGE_SUGGESTIONS])).map((lang) => (
+            <Chip
+              key={lang}
+              label={lang}
+              selected={(extra.languages ?? []).includes(lang)}
+              onPress={() => void save({ languages: toggleIn(extra.languages ?? [], lang) } as never)}
+            />
+          ))}
+        </View>
+      </Card>
+
+      <Card className="gap-3">
         <SectionTitle>Your vibe</SectionTitle>
         <Caption>
           These feed the aggregated &quot;who tends to be here&quot; on venue screens. A tag is only
@@ -170,6 +205,23 @@ export default function ProfileScreen() {
             While incognito, familiar faces stays off regardless of the switch above.
           </Caption>
         ) : null}
+        <View className="border-border-warm border-t" />
+        <ToggleRow
+          label="Show what we have in common"
+          description="When you meet someone, show the interests, topics and languages you both listed, and use them for conversation ideas. Off for either of you means neither sees it."
+          value={profile.share_overlap ?? true}
+          onChange={(next) => void save({ share_overlap: next })}
+        />
+      </Card>
+
+      <Card className="gap-2">
+        <SectionTitle>How your data is used</SectionTitle>
+        <Caption>
+          Nobody sees your profile. People you meet only see what you both have in common, and only
+          after you have both agreed to talk. Conversation ideas are written by Google Gemini from
+          those shared words alone: no name, email, age or photo is ever sent. Lights never show who
+          is sitting at a table. Your personal check-ins are deleted after 90 days.
+        </Caption>
       </Card>
 
       <Card className="gap-3">

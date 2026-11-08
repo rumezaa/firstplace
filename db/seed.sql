@@ -170,13 +170,20 @@ declare
   i         integer;
   v_idx     integer := 0;
 begin
-  for v in select id from public.venues order by id loop
+  -- Skip venues that already have their own tables (e.g. the TFDL floor from
+  -- migration 130), or their chat table would collide with ours.
+  for v in select ven.id from public.venues ven
+           where not exists (select 1 from public.tables t where t.venue_id = ven.id)
+           order by ven.id loop
     v_idx := v_idx + 1;
     v_n   := 4 + (v_idx % 5);   -- 4..8 tables, deterministic
 
     for i in 1 .. v_n loop
-      insert into public.tables (venue_id, label, seats, status, is_chat_table)
+      -- Stable ids (derived from venue + label) so box configs and printed
+      -- QR codes keep working after the demo data is reset.
+      insert into public.tables (id, venue_id, label, seats, status, is_chat_table)
       values (
+        md5(v.id::text || ':T' || i)::uuid,
         v.id,
         'T' || i,
         case when i % 3 = 0 then 4 else 2 end,
@@ -188,8 +195,8 @@ begin
     -- The chat table. One per venue, deliberately bigger and clearly named --
     -- the whole point is that it is obvious which table is the one where it is
     -- fine to say hello to a stranger.
-    insert into public.tables (venue_id, label, seats, status, is_chat_table)
-    values (v.id, 'Chat Table', 6, 'open', true);
+    insert into public.tables (id, venue_id, label, seats, status, is_chat_table)
+    values (md5(v.id::text || ':Chat Table')::uuid, v.id, 'Chat Table', 6, 'open', true);
   end loop;
 end $$;
 
@@ -420,3 +427,54 @@ from (values
   ('ghost@thirdplace.test',  array['cycling'],                                           array['English'],            '45-54', null,             array[]::text[])
 ) as s(email, topics, languages, age_range, comm_pref, extra_interests)
 where u.auth0_sub = 'seed|' || s.email;
+
+-- ---------------------------------------------------------------------------
+-- 6. One finished conversation that BOTH people called good, so there is a
+--    real connection on the Connections screen and the meetup planner
+--    (db/migrations/100_meetups.sql) has something to plan.
+--
+--    Alex and Wei are the pair on purpose: they share "hiking" AND
+--    "board games", one outdoors and one in, so the plan the forecast picks
+--    visibly changes with the weather instead of always being a cafe.
+-- ---------------------------------------------------------------------------
+with pair as (
+  select (select id from public.users where auth0_sub = 'seed|demo@thirdplace.test') as alex,
+         (select id from public.users where auth0_sub = 'seed|wei@thirdplace.test')  as wei,
+         t.id as table_id, t.venue_id
+  from public.tables t
+  where t.venue_id = 'c0ffee00-0000-4000-8000-000000000002' and t.is_chat_table
+  limit 1
+), conv as (
+  insert into public.conversations
+    (table_id, venue_id, seated_user, joiner_user, via, started_at, ends_at, ended_at, seated_vote, joiner_vote)
+  select table_id, venue_id, alex, wei, 'request',
+         now() - interval '6 days', now() - interval '6 days' + interval '30 minutes',
+         now() - interval '6 days' + interval '34 minutes', 'good', 'good'
+  from pair
+  where alex is not null and wei is not null
+  returning id, seated_user, joiner_user
+)
+insert into public.connections (user_a, user_b, conversation_id, created_at)
+select least(seated_user, joiner_user), greatest(seated_user, joiner_user), id,
+       now() - interval '6 days'
+from conv
+on conflict (user_a, user_b) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- 7. TFDL floor 3 demo students (also in 150_tfdl_floor3.sql; section 0 clears
+--    seeded users, so they are re-added here). See server/scripts/demo_floor.py.
+-- ---------------------------------------------------------------------------
+-- Demo students to fill the floor (dev login only: auth0_sub 'seed|…').
+insert into public.users (id, auth0_sub, name, interests, vibe_tags, incognito, familiar_faces_opt_in, created_at)
+select md5('floor3:' || n)::uuid, 'seed|' || e, n, i, array['quiet'], false, true, now() - interval '30 days'
+from (values
+  ('Amara', 'amara@thirdplace.test', array['chemistry', 'running']),
+  ('Ben',   'ben@thirdplace.test',   array['history', 'board games']),
+  ('Chloe', 'chloe@thirdplace.test', array['design', 'hiking']),
+  ('Dev',   'dev@thirdplace.test',   array['engineering', 'chess']),
+  ('Elena', 'elena@thirdplace.test', array['nursing', 'coffee']),
+  ('Farid', 'farid@thirdplace.test', array['economics', 'soccer']),
+  ('Grace', 'grace@thirdplace.test', array['biology', 'photography']),
+  ('Hiro',  'hiro@thirdplace.test',  array['computer science', 'music'])
+) as s(n, e, i)
+on conflict (auth0_sub) do nothing;

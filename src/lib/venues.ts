@@ -91,9 +91,10 @@ export function activeFilterCount(filters: VenueFilters): number {
 }
 
 /** Calgary. The map opens here before venues load. */
+// Downtown to the UCalgary campus (the TFDL demo floor) in one view.
 export const CALGARY_REGION = {
-  latitude: 51.0447,
-  longitude: -114.0719,
-  latitudeDelta: 0.12,
-  longitudeDelta: 0.12,
+  latitude: 51.058,
+  longitude: -114.098,
+  latitudeDelta: 0.1,
+  longitudeDelta: 0.14,
 };

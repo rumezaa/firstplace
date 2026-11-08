@@ -84,8 +84,21 @@ If the server forgets a filter, the database still refuses.
 | Venue vibe | busy hours, crowd tags, open-to-chat count, venue info | a 2-sentence "what it's like inside right now" |
 | Conversation openers | shared interests and the venue, **after mutual acceptance only** | 3 opener ideas |
 | Owner tip | the dashboard aggregates | one practical tip, e.g. "Tuesdays 2–4pm are quiet: try a study-hour deal" |
+| Meetup invitation | the finished plan: activity, venue, day, forecast, shared interests | one warm, low-pressure line to send |
+| Icebreaker questions | the shared overlap (interests, topics, languages) + 3 public places near the venue | 4 questions, at most one mentioning a nearby place |
+| Hangout plans | the shared overlap + 8 public places near where they met | 3 plans, each tied to a real place |
 
-Rate-limited per user, with responses cached in the database.
+**RAG on Calgary open data** (`server/src/calgary.ts`, `rag.ts`): once a day the server loads ~570 places from data.calgary.ca (recreation facilities, public art, library hours, community centres and attractions, regional and district parks), cached in `server/.cache/`. Each request retrieves the closest places that match the shared interests and gives only those to Gemini as a numbered CONTEXT block. Any plan citing a place that wasn't retrieved is dropped.
+
+**Itinerary from the box** (`server/src/itinerary.ts`, `context.ts`): the start point is the venue of the box where the conversation happened (box → table → venue → lat/lng), so no phone location is collected. The server adds Calgary time and date, statutory holidays (Nager.Date) and weather from Environment Canada (alerts, wind chill, gusts, chance of rain or snow, sunrise and sunset; cached 15 min). Gemini picks 2–3 stops from the retrieved places and writes the text; the server computes walking legs and times and drops any stop that breaks a rule (outdoors during a warning, a storm or after dark; closed library; more than 25 min walk; past 3 h). If too little survives, a rule-based plan is used. Endpoints: `GET /me/conversation/itinerary`, `GET /me/connections/:id/itinerary`, `GET /calgary/now`.
+
+**Guard rails** (`server/src/gemini.ts`, set in `.env`): per user (or per IP when signed out) 6 calls a minute and 60 a day; 30 a minute and 4 at once for the whole server; 8s per model attempt and a 15s overall deadline; SDK retries off; identical requests in flight share one call; answers cached in memory. A limit or timeout never errors: the endpoint returns fallback copy with `aiStatus` and `retryAfterSec`.
+
+Note the direction of travel on the meetup planner: Gemini is handed a plan that
+has already been decided and only writes the covering sentence. It does not pick
+the activity, the day or the venue, so it cannot invent a cafe or promise
+sunshine, and no key (or an outage) costs one sentence rather than the feature.
+See [MEETUP_PLANNER.md](MEETUP_PLANNER.md) for why it is built that way.
 
 ## 7. Hardware: the chat-table light
 
@@ -119,6 +132,22 @@ The app makes about 15 Supabase calls today, all in `src/lib/*`. Each becomes on
 | `auth.*` | Auth0 in `SessionProvider` | — |
 | new | `GET /venues/:id/vibe`, `GET /familiar-faces/:id/openers`, `GET /dashboard/:venueId/insight` | varies |
 | new | `GET /hw/tables/:tableId/state` | device key |
+
+The meetup planner (`db/migrations/100_meetups.sql`, `server/src/routes/meetups.ts`)
+adds the second-meeting flow. Every endpoint is login-only and scoped to the two
+people in the connection:
+
+| Endpoint | What it does |
+|---|---|
+| `POST /connections/:id/meetup` | start, or resume, planning with a connection |
+| `GET /meetups/:id` | the planning screen: shared interests, the handshake state, and the forecast |
+| `POST /meetups/:id/availability` | replace my own free windows (day + morning/afternoon/evening) |
+| `GET /meetups/:id/overlap` | the windows you BOTH picked — empty until both have answered |
+| `POST /meetups/:id/plan` | rank ideas against the overlap and the forecast, store the proposal |
+| `POST /meetups/:id/respond` | yes or no; confirms only on a mutual yes |
+| `POST /meetups/:id/cancel` | call it off |
+| `GET /me/meetups` | my plans and their status |
+| `GET /forecast` | the part-of-day forecast (Open-Meteo, no API key) |
 
 ## 9. Repo layout after the change
 

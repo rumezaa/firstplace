@@ -63,8 +63,8 @@ function TableTile({
       ? 'bg-berry-soft border-berry'
       : 'bg-berry-soft border-berry'
     : isTaken
-      ? 'bg-brick-soft border-brick-soft'
-      : 'bg-sage-soft border-sage-soft';
+      ? 'bg-sunk border-border-warm'
+      : 'bg-surface border-border-warm';
 
   const selectedRing = selected ? 'border-clay' : '';
 
@@ -92,7 +92,7 @@ function TableTile({
       }
       style={{ minHeight: MIN_TAP_TARGET + 28, minWidth: 104 }}
       className={`rounded-tile flex-1 justify-between border-2 p-3 ${tone} ${selectedRing} ${
-        !pressable ? 'opacity-70' : 'active:opacity-80'
+        pressable ? 'active:opacity-80' : ''
       }`}
     >
       <Text
@@ -106,7 +106,7 @@ function TableTile({
       </Caption>
       <Text
         className={`mt-1 text-xs font-semibold ${
-          isTaken ? 'text-brick' : table.is_chat_table ? 'text-berry' : 'text-sage'
+          table.is_chat_table ? 'text-clay' : 'text-mocha'
         }`}
       >
         {isTaken ? 'Taken' : 'Open'}
@@ -131,8 +131,8 @@ export function ChatTableNote() {
     <View className="bg-berry-soft rounded-tile p-3">
       <SectionTitle className="text-berry text-base">What is the chat table?</SectionTitle>
       <Caption className="text-berry mt-1">
-        One table per cafe where sitting down means you are happy to be talked to. No pressure, no
-        introductions needed. Checking in there counts double toward rewards.
+        A conversation table with a light you control. Green means say hi, yellow means ask in the
+        app, and red means please do not disturb. Sitting here does not oblige you to talk.
       </Caption>
     </View>
   );

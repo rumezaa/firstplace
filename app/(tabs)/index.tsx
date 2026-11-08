@@ -1,13 +1,13 @@
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AVAILABILITY, tablesSummary } from '@/lib/availability';
 import { APP_NAME } from '@/lib/branding';
 import type { Venue, VenueLive } from '@/lib/database.types';
 import { people } from '@/lib/format';
-import { MIN_TAP_TARGET } from '@/lib/theme';
+import { MIN_TAP_TARGET, colors } from '@/lib/theme';
 import {
   NO_FILTERS,
   activeFilterCount,
@@ -20,6 +20,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
 import { Badge, Body, Caption, Chip, ErrorNote, Loading, SectionTitle } from '@/components/ui';
 import { VenueMap } from '@/components/VenueMap';
+import { VenueList } from '@/components/VenueList';
 
 export default function MapScreen() {
   const [filters, setFilters] = useState<VenueFilters>(NO_FILTERS);
@@ -37,6 +38,7 @@ export default function MapScreen() {
 
   const venues = venuesState.data ?? [];
   const live = liveState.data ?? {};
+  const [asList, setAsList] = useState(false);
   const visible = filterVenues(venues, live, filters);
   const selected = visible.find((v) => v.id === selectedId) ?? null;
 
@@ -46,7 +48,7 @@ export default function MapScreen() {
 
   if (venuesState.loading && venues.length === 0) {
     return (
-      <SafeAreaView className="bg-cream flex-1">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.cream }}>
         <Loading label="Looking for places to sit" />
       </SafeAreaView>
     );
@@ -54,7 +56,7 @@ export default function MapScreen() {
 
   if (venuesState.error) {
     return (
-      <SafeAreaView className="bg-cream flex-1 px-5 pt-4">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.cream, paddingHorizontal: 20, paddingTop: 16 }}>
         <ErrorNote error={venuesState.error} onRetry={() => void venuesState.reload()} />
       </SafeAreaView>
     );
@@ -62,11 +64,29 @@ export default function MapScreen() {
 
   return (
     <View className="bg-cream flex-1">
-      <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
+      {asList && Platform.OS !== 'web' ? (
+        <VenueList venues={visible} live={live} onSelect={setSelectedId} />
+      ) : (
+        <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
+      )}
 
-      {/* Header + filter chips float over the map so the map stays full-bleed. */}
-      <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0" pointerEvents="box-none">
-        <View className="px-5 pb-2 pt-1" pointerEvents="none">
+      {/* Header + filter chips float over the map so the map stays full-bleed.
+          A solid backdrop keeps them readable over busy map tiles on iOS too,
+          and the right padding leaves room for the floating Help button. */}
+      <SafeAreaView
+        edges={['top']}
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: colors.cream,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
+      >
+        <View className="pb-2 pl-5 pr-28 pt-1" pointerEvents="none">
           <Text className="text-espresso text-2xl font-bold" accessibilityRole="header">
             {APP_NAME}
           </Text>
@@ -81,6 +101,14 @@ export default function MapScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerClassName="gap-2 px-5 pb-2"
         >
+          {Platform.OS !== 'web' ? (
+            <Chip
+              label={asList ? 'Map' : 'List'}
+              selected={false}
+              onPress={() => setAsList((v) => !v)}
+              accessibilityHint={asList ? 'Show places on the map' : 'Show places as a list'}
+            />
+          ) : null}
           <Chip
             label="Has tables"
             selected={filters.hasTables}
@@ -132,8 +160,31 @@ function VenuePreviewSheet({
   const openToChat = live?.people_open_to_chat ?? 0;
 
   return (
-    <View className="absolute bottom-0 left-0 right-0">
-      <SafeAreaView edges={['bottom']} className="bg-surface border-border-warm rounded-t-card border-t px-5 pb-2 pt-4">
+    // Sits above the tab bar, which already clears the iPhone home indicator,
+    // so no bottom inset here. Plain View + style: NativeWind does not style
+    // SafeAreaView, which is why this card used to lose its padding.
+    <View
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderTopWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: -2 },
+        elevation: 8,
+      }}
+    >
+      <View>
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1 gap-1">
             <SectionTitle>{venue.name}</SectionTitle>
@@ -188,14 +239,7 @@ function VenuePreviewSheet({
           <Text className="text-base font-semibold text-white">See inside</Text>
         </Pressable>
 
-        <Link
-          href={`/kiosk/${venue.id}`}
-          className="text-mocha mt-3 text-center text-xs"
-          accessibilityLabel={`Open kiosk mode for ${venue.name}`}
-        >
-          Staff? Open kiosk mode
-        </Link>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

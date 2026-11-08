@@ -77,7 +77,7 @@ export default function SignIn() {
           When the light&apos;s green, say hi.
         </Text>
         <Text style={{ fontSize: 17, lineHeight: 23, color: colors.mocha, marginTop: 8 }}>
-          FirstPlace tables show who&apos;s open to talk. No profiles to scroll, just people nearby.
+          ChatterBox tables show who&apos;s open to talk. No profiles to scroll, just people nearby.
         </Text>
         {error ? (
           <View style={{ marginTop: 16 }}>

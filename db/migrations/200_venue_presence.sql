@@ -6,7 +6,7 @@
 -- NFC: the phone is signed in, so the server already knows who you are.
 --
 -- The room summary is counts only, like public.venue_live: how many people
--- are here, how many tables are open to talk, and the most common interest
+-- are here, how many tables are open to talk (green), and the most common interest
 -- you share with people here. Never who. Incognito people are not counted
 -- (app_private.active_checkins), blocked people never count towards "like
 -- you", and the shared-interest line respects the "Show what we have in
@@ -82,8 +82,9 @@ returns jsonb language sql stable security definer set search_path = public, app
   )
   select jsonb_build_object(
     'people_here', (select count(*)::int from here),
+    -- Green only: since 190, yellow means an empty table (a free seat).
     'open_to_talk', (select count(*)::int from public.tables t
-                     where t.venue_id = p_venue and public.table_light(t.id) in ('green', 'yellow')),
+                     where t.venue_id = p_venue and public.table_light(t.id) = 'green'),
     'here', exists (select 1 from here where user_id = auth.uid()),
     'like_you', (select jsonb_build_object('interest', interest, 'people', people) from top)
   );

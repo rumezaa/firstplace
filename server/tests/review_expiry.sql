@@ -27,14 +27,14 @@ begin
  update public.checkins set checked_out_at=now() where table_id=t and checked_out_at is null;
  perform public.claim_table(t,'green');
  update public.checkins set away_until=now()-interval '1 second' where user_id=u and checked_out_at is null;
- if public.table_light(t)<>'off' then raise exception 'Expired away light not off'; end if;
+ if public.table_light(t)<>'yellow' then raise exception 'Expired away hold did not free the seat'; end if;
  perform app_private.expire_conversation_state();
  if exists(select 1 from public.checkins where user_id=u and checked_out_at is null) then raise exception 'Away claim not released'; end if;
  raise notice 'PASS expired away hold fails closed and releases';
  perform public.claim_table(t,'green');
  update public.checkins set checked_in_at=now()-interval '3 hours 1 minute' where user_id=u and checked_out_at is null;
  perform app_private.expire_conversation_state();
- if public.table_light(t)<>'off' then raise exception 'Three-hour claim not released'; end if;
+ if public.table_light(t)<>'yellow' then raise exception 'Three-hour claim not released'; end if;
  raise notice 'PASS three-hour checkout';
 end $$;
 rollback;

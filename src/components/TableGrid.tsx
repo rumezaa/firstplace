@@ -132,8 +132,8 @@ export function ChatTableNote() {
     <View className="bg-berry-soft rounded-tile p-3">
       <SectionTitle className="text-berry text-base">What is the chat table?</SectionTitle>
       <Caption className="text-berry mt-1">
-        A conversation table with a light you control. Green means say hi, yellow means ask in the
-        app, and red means please do not disturb. Sitting here does not oblige you to talk.
+        A conversation table with a light. Yellow means the seat is free, green means say hi, and red
+        means please do not disturb. Sitting here does not oblige you to talk.
       </Caption>
     </View>
   );

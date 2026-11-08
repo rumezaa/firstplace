@@ -158,7 +158,7 @@ venues.get('/:id/floor', async (c) => {
 /**
  * "I'm here": the entrance tag checks you in to the venue, with no table.
  * Nothing is sent over NFC; the login says who you are. Keeps an existing
- * table claim at this venue (see db/migrations/170_venue_presence.sql).
+ * table claim at this venue (see db/migrations/200_venue_presence.sql).
  */
 venues.post('/:id/enter', requireAuth, async (c) => {
   const row = await asUser(c.get('userId'), (db) =>

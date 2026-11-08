@@ -1,7 +1,8 @@
 # Entrance tag: venue check-in ("I'm here"), the room summary (counts only),
 # and green tables showing shared interests (by consent, never who).
 # Run against a fresh seed: python3 server/tests/room_test.py http://localhost:8787
-# Seed: Sam, Priya and Wei hold yellow tables at Kensington Coffee Co.
+# Seed: Sam, Priya and Wei hold tables at Kensington Coffee Co. Since 190 a seated
+# person is green or red (yellow = free seat), so the seed's claims are green.
 
 import json, urllib.request as u, sys
 B=sys.argv[1] if len(sys.argv)>1 else 'http://localhost:8787'
@@ -34,7 +35,8 @@ ok(r['like_you']=={'interest':'hiking','people':3}, f"most shared interest: {r['
 ok('name' not in json.dumps(r) and 'user' not in json.dumps(r),'room never names anyone')
 
 # ------------------------------------------------ green: by consent only --
-ok(room(v1,T['demo'])['green']==[],'all yellow: no table shows anything')
+for n in ['sam','priya','wei']: req('POST','/me/light',{'light':'red'},tok=T[n])
+ok(room(v1,T['demo'])['green']==[] and room(v1)['open_to_talk']==0,'all red: no table shows anything, nobody open to talk')
 sam_table=req('GET','/me/checkins/open',tok=T['sam'])[1]['table_id']
 req('POST','/me/light',{'light':'green'},tok=T['sam'])
 g=room(v1,T['demo'])['green']
@@ -48,7 +50,8 @@ ok(room(v1,T['demo'])['green']==[],'Sam turns off "Show what we have in common":
 req('PATCH','/me',{'share_overlap':True},tok=T['sam'])
 req('POST','/me/light',{'light':'red'},tok=T['sam'])
 ok(room(v1,T['demo'])['green']==[],'red: invisible beyond the counts')
-req('POST','/me/light',{'light':'green'},tok=T['sam'])
+for n in ['sam','priya','wei']: req('POST','/me/light',{'light':'green'},tok=T[n])
+ok(len(room(v1,T['demo'])['green'])==3,'everyone back on green: each table shows its overlap')
 
 # ------------------------------------------ table claims and other venues --
 tables=req('GET',f'/venues/{v1}/tables')[1]; free=[x for x in tables if x['status']=='open'][0]['id']
@@ -56,7 +59,7 @@ s,_=req('POST',f'/tables/{free}/claim',{'light':'green'},tok=T['demo']); ok(s==2
 s,r=req('POST',f'/venues/{v1}/enter',tok=T['demo']); ok(not r['new'] and r['table_id']==free,'entrance tap keeps the table claim')
 ok(room(v1)['people_here']==4 and room(v1)['open_to_talk']==4,'still one person, now open to talk')
 s,r=req('POST',f'/venues/{v2}/enter',tok=T['demo']); ok(r['new'],'entering another venue moves you there')
-ok(room(v1)['people_here']==3 and req('GET',f'/tables/{free}/view')[1]['light']=='off','old venue drops you and frees your table')
+ok(room(v1)['people_here']==3 and req('GET',f'/tables/{free}/view')[1]['light']=='yellow','old venue drops you and frees your table (yellow = free seat)')
 ok(room(v1,T['demo'])['green']==[],'not in the room: green tables show nothing')
 
 # --------------------------------------------- "like you" never singles out --

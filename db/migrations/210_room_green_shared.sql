@@ -1,10 +1,10 @@
 -- ============================================================================
 -- FirstPlace — the room by consent: green tables show what you have in common
 -- ============================================================================
--- Extends public.venue_room() (170) with `green`: for each table on GREEN
+-- Extends public.venue_room() (200) with `green`: for each table on GREEN
 -- (the person has said they want company), the interests you share with them.
 --
---   Everyone        → counts only (170).
+--   Everyone        → counts only (200).
 --   Green           → their table plus shared interests. No name, no profile;
 --                     first names stay hidden until you're actually chatting.
 --   Yellow / red /
@@ -58,8 +58,9 @@ returns jsonb language sql stable security definer set search_path = public, app
   )
   select jsonb_build_object(
     'people_here', (select count(*)::int from here),
+    -- Green only: since 190, yellow means an empty table (a free seat).
     'open_to_talk', (select count(*)::int from public.tables t
-                     where t.venue_id = p_venue and public.table_light(t.id) in ('green', 'yellow')),
+                     where t.venue_id = p_venue and public.table_light(t.id) = 'green'),
     'here', exists (select 1 from here where user_id = auth.uid()),
     'like_you', (select jsonb_build_object('interest', interest, 'people', people) from top),
     'green', coalesce((

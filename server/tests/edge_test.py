@@ -51,7 +51,7 @@ light = lambda t: req('GET', f'/hw/tables/{t}/state', key=KEY)[1]['light']
 
 # ---------------------------------------------------------------- floor ---
 s, fl = req('GET', f'/venues/{FLOOR}/floor')
-ok(s == 200 and len(fl) == 16 and all(t['light'] == 'off' for t in fl), 'signed-out floor: all 16 tables, all off')
+ok(s == 200 and len(fl) == 16 and all(t['light'] == 'yellow' for t in fl), 'signed-out floor: all 16 tables free (yellow)')
 ok(all(set(t) == {'id', 'label', 'seats', 'is_chat_table', 'box_enabled', 'light', 'mine', 'pos_x', 'pos_y'} for t in fl),
    'floor never exposes who sits where (only colour fields)')
 s, fl = req('GET', '/venues/00000000-0000-4000-8000-000000000000/floor')
@@ -134,6 +134,6 @@ req('PATCH', '/me', {'share_overlap': True}, T['wei'])
 
 for t in T.values():
     req('POST', '/me/leave-now', tok=t)
-ok(all(light(t) == 'off' for t in (WIN, CEN, STK)), 'everyone left: the whole floor is off')
+ok(all(light(t) == 'yellow' for t in (WIN, CEN, STK)), 'everyone left: every seat is free (yellow)')
 print('\nALL PASS' if not fails else f'\n{fails} FAILED')
 sys.exit(1 if fails else 0)

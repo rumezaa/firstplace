@@ -12,7 +12,7 @@ const ai = env.geminiApiKey
   : null;
 
 const SYSTEM =
-  'You write short, warm, plain-language copy for FirstPlace, a Calgary app that helps people ' +
+  'You write short, warm, plain-language copy for ChatterBox, a Calgary app that helps people ' +
   'become regulars at cafes and meet the familiar faces they keep seeing. Reply with the final ' +
   'copy only: no preamble, no options, no markdown. Never invent facts about specific people. ' +
   'Never mention names, ages, appearance or locations of individuals. When a CONTEXT block is ' +

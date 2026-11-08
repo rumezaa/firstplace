@@ -10,12 +10,12 @@ import { fetchConversation, isFloorCode, parseBoxCode } from '@/lib/conversation
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import { fetchTables, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
-import { Body, Button, Card, Loading, Screen, SectionTitle, Title } from '@/components/ui';
+import { Body, Button, Caption, Card, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
- * Tap or scan a First Place box. The box's NFC tag and printed QR both hold a
+ * Tap or scan a ChatterBox box. The box's NFC tag and printed QR both hold a
  * link with its table id; either one opens that table's screen, where you
- * claim it, join on green or request on yellow.
+ * take it if it's yellow (free), or join on green.
  */
 export default function CheckinScreen() {
   const router = useRouter();
@@ -64,49 +64,74 @@ export default function CheckinScreen() {
 
 function Scanner({ onTable, onFloor }: { onTable: (id: string) => void; onFloor: (venueId: string) => void }) {
   const [permission, requestPermission] = useCameraPermissions();
+  const [open, setOpen] = useState(false);
   const [scanned, setScanned] = useState(false);
+  const [wrongCode, setWrongCode] = useState(false);
   const [focused, setFocused] = useState(false);
   useFocusEffect(
     useCallback(() => {
       setFocused(true);
-      setScanned(false);
-      return () => setFocused(false);
+      return () => {
+        // Leaving the tab always turns the camera off.
+        setFocused(false);
+        setOpen(false);
+        setScanned(false);
+      };
     }, []),
   );
 
   if (Platform.OS === 'web') return null; // laptops: use the list below
 
+  async function start() {
+    setWrongCode(false);
+    setScanned(false);
+    if (!permission?.granted) {
+      const res = await requestPermission();
+      if (!res.granted) return;
+    }
+    setOpen(true);
+  }
+
+  if (!open) {
+    return (
+      <View className="gap-2">
+        <Button label="Scan a code" onPress={() => void start()} />
+        {permission && !permission.granted && !permission.canAskAgain ? (
+          <Caption>
+            Camera access is off for ChatterBox. Turn it on in Settings, or pick the place below.
+          </Caption>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <Card className="gap-3">
-      <SectionTitle>Scan the box</SectionTitle>
-      {!permission ? (
-        <Loading label="Starting the camera" />
-      ) : !permission.granted ? (
-        <>
-          <Body>The camera is only used to read the code on the box.</Body>
-          <Button label="Allow camera" onPress={() => void requestPermission()} />
-        </>
-      ) : (
-        <View className="bg-sunk overflow-hidden rounded-card" style={{ height: 280 }}>
-          {focused ? (
-            <CameraView
-              style={{ flex: 1 }}
-              facing="back"
-              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-              onBarcodeScanned={({ data }) => {
-                if (scanned) return;
-                const id = parseBoxCode(data);
-                if (!id) return;
-                setScanned(true);
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // An entrance code carries a venue id, not a table id.
-                if (isFloorCode(data)) onFloor(id);
-                else onTable(id);
-              }}
-            />
-          ) : null}
-        </View>
-      )}
+      <View className="bg-sunk overflow-hidden rounded-card" style={{ height: 300 }}>
+        {focused ? (
+          <CameraView
+            style={{ flex: 1 }}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={({ data }) => {
+              if (scanned) return;
+              const id = parseBoxCode(data);
+              if (!id) {
+                setWrongCode(true);
+                return;
+              }
+              setScanned(true);
+              setOpen(false);
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              // An entrance code carries a venue id, not a table id.
+              if (isFloorCode(data)) onFloor(id);
+              else onTable(id);
+            }}
+          />
+        ) : null}
+      </View>
+      <Caption>{wrongCode ? "That isn't a ChatterBox code. Try the one on the box." : 'Point at the code on the side of the box.'}</Caption>
+      <Button label="Cancel" variant="quiet" onPress={() => setOpen(false)} />
     </Card>
   );
 }

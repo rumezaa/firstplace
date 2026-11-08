@@ -52,7 +52,7 @@ me.get('/checkins/open', async (c) => {
 });
 
 me.get('/checkins', async (c) => {
-  const limit = Math.min(Number(c.req.query('limit') ?? 30) || 30, 100);
+  const limit = Math.min(Number(c.req.query('limit') ?? 30) || 30, 500); // 90 days of visits; personal check-ins are purged after that.
   const rows = await asUser(c.get('userId'), (db) =>
     db.query(
       `select c.*,

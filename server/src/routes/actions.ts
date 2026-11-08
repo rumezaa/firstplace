@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { requireAuth, type AuthVars } from '../auth.js';
 import { asUser } from '../db.js';
-import { generate } from '../gemini.js';
+import { ask, requester } from '../gemini.js';
 
 // Write actions and staff screens. All of them go through the SQL functions in
 // db/migrations/040_rpc.sql, which hold the real rules (kiosk code expiry,
@@ -84,11 +84,17 @@ actions.get('/dashboard/:venueId/insight', async (c) => {
   ).rows[0].result as { suppressed: boolean };
   if (dash.suppressed) return c.json({ insight: null, suppressed: true });
 
-  const text = await generate(
+  const res = await ask(
     `insight:${venueId}:${new Date().toISOString().slice(0, 13)}`,
     `You advise a Calgary cafe owner. From these anonymous 30-day stats, give ONE practical, specific ` +
       `idea (max 2 sentences) to fill quiet hours or grow repeat visits. Stats (JSON): ${JSON.stringify(dash)}`,
-    60 * 60_000,
+    { who: requester(c), ttlMs: 60 * 60_000 },
   );
-  return c.json({ insight: text, suppressed: false, generated: Boolean(text) });
+  return c.json({
+    insight: res.text,
+    suppressed: false,
+    generated: Boolean(res.text),
+    aiStatus: res.status,
+    retryAfterSec: res.retryAfterSec ?? null,
+  });
 });

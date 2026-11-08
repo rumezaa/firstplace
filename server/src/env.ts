@@ -7,7 +7,12 @@ function required(name: string): string {
   return value;
 }
 
-const isProduction = process.env.NODE_ENV === 'production';
+function num(name: string, fallback: number): number {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+const isProduction =process.env.NODE_ENV === 'production';
 
 export const env = {
   port: Number(process.env.PORT ?? 8787),
@@ -24,8 +29,17 @@ export const env = {
   devTokenSecret: process.env.DEV_TOKEN_SECRET ?? (isProduction ? '' : 'local-dev-only-secret'),
 
   geminiApiKey: process.env.GEMINI_API_KEY ?? '',
-  geminiModels: (process.env.GEMINI_MODELS ?? 'gemini-3.5-flash,gemini-flash-latest')
+  geminiModels: (process.env.GEMINI_MODELS ?? 'gemini-3.5-flash,gemini-3.5-flash-lite')
     .split(',').map((m) => m.trim()).filter(Boolean),
+  // Guard rails on every Gemini call (cache hits are free and never counted).
+  gemini: {
+    timeoutMs: num('GEMINI_TIMEOUT_MS', 8_000), // one model attempt
+    deadlineMs: num('GEMINI_DEADLINE_MS', 15_000), // all fallback models together
+    userPerMinute: num('GEMINI_USER_PER_MINUTE', 6),
+    userPerDay: num('GEMINI_USER_PER_DAY', 60),
+    globalPerMinute: num('GEMINI_GLOBAL_PER_MINUTE', 30), // stay under the project quota
+    maxConcurrent: num('GEMINI_MAX_CONCURRENT', 4),
+  },
 
   // Chat-table lights: comma-separated device keys. Each ESP32 sends one.
   hwDeviceKeys: (process.env.HW_DEVICE_KEYS ?? '').split(',').map((k) => k.trim()).filter(Boolean),

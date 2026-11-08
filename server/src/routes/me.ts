@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { requireAuth, type AuthVars } from '../auth.js';
 import { asSystem, asUser } from '../db.js';
-import { generate, parseStringList } from '../gemini.js';
+import { icebreakers, type Shared } from '../rag.js';
 
 // Everything about the signed-in user. Every query runs as that user, so row
 // level security limits it to their own rows.
@@ -96,33 +96,33 @@ me.get('/familiar-faces/:id/openers', async (c) => {
   if (!card) throw new HTTPException(404, { message: 'No such connection.' });
   if (!card.mutual) throw new HTTPException(403, { message: 'Openers unlock once you both say yes.' });
 
-  // Shared interests need both profiles, which only the system can read. We
-  // send back the overlap only, never the other person's full list.
-  const shared = await asSystem(async (db) => {
+  // The overlap needs both profiles, which only the system can read. Only the
+  // overlap (app_private.shared_between) ever leaves the database.
+  const ctx = await asSystem(async (db) => {
     const r = await db.query(
-      `select coalesce(array(select unnest(ua.interests) intersect select unnest(ub.interests)), '{}') as shared
-       from public.familiar_faces ff
-       join public.users ua on ua.id = ff.user_a
-       join public.users ub on ub.id = ff.user_b
+      `select app_private.shared_between(ff.user_a, ff.user_b) as shared,
+              v.name, v.type, v.lat, v.lng
+       from public.familiar_faces ff join public.venues v on v.id = ff.venue_id
        where ff.id = $1`,
       [id],
     );
-    return (r.rows[0]?.shared ?? []) as string[];
+    return r.rows[0] as { shared: Shared; name: string; type: string; lat: number; lng: number } | undefined;
   });
+  const shared: Shared = ctx?.shared ?? {};
 
-  const text = await generate(
-    `openers:${id}`,
-    `Two regulars at ${card.venue_name} keep seeing each other and both agreed to say hi. ` +
-      `Shared interests: ${shared.length ? shared.join(', ') : 'none known'}. ` +
-      `Write 3 short, natural opening lines one of them could say in person. ` +
-      `Reply as a JSON array of 3 strings.`,
-    60 * 60_000,
-    { json: true },
-  );
-  const openers = parseStringList(text);
+  const res = await icebreakers({
+    cacheKey: `openers:${id}`,
+    who: c.get('userId')!,
+    shared,
+    venue: ctx ? { name: ctx.name, type: ctx.type, lat: ctx.lat, lng: ctx.lng } : null,
+    count: 3,
+    mode: 'openers',
+  });
   return c.json({
-    openers: openers.length ? openers : [`Hey, I think we're both regulars at ${card.venue_name}!`],
-    sharedInterests: shared,
-    generated: openers.length > 0,
+    openers: res.lines.length ? res.lines : [`Hey, I think we're both regulars at ${card.venue_name}!`],
+    sharedInterests: shared.interests ?? [],
+    generated: res.lines.length > 0,
+    aiStatus: res.status,
+    retryAfterSec: res.retryAfterSec ?? null,
   });
 });

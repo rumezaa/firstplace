@@ -14,6 +14,7 @@ import {
 } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
+import { FLOOR_LAYOUTS } from '@/lib/floorLayouts';
 import { ChatTableNote, TableGrid, TableGridLegend } from '@/components/TableGrid';
 import {
   Badge,
@@ -93,6 +94,11 @@ export default function VenueScreen() {
         <Title>{v.name}</Title>
         {v.address ? <Caption>{v.address}</Caption> : null}
       </View>
+
+      {FLOOR_LAYOUTS[v.id] ? (
+        // Same screen the NFC tag at the entrance opens.
+        <Button label="See the floor" onPress={() => router.push(`/floor/${v.id}`)} />
+      ) : null}
 
       {live.error ? <ErrorNote error={live.error} onRetry={() => void live.reload()} /> : null}
       <View className="flex-row flex-wrap items-center gap-2">

@@ -72,12 +72,14 @@ test('no tags on cards', () => {
   assert.ok(!/class="tag"/.test(html()));
 });
 
-test('every img has non-empty alt', () => {
+test('every img has alt; only the logos next to the brand text may be empty', () => {
   const imgs = html().match(/<img\b[^>]*>/g) || [];
   assert.ok(imgs.length >= 7);
   for (const tag of imgs) {
     const m = /\balt="([^"]*)"/.exec(tag);
-    assert.ok(m && m[1].trim().length > 0, `empty alt: ${tag}`);
+    assert.ok(m, `missing alt: ${tag}`);
+    if (/src="img\/logo\.png"/.test(tag)) assert.strictEqual(m[1], '', tag);
+    else assert.ok(m[1].trim().length > 0, `empty alt: ${tag}`);
   }
 });
 
@@ -159,7 +161,7 @@ test('reduced motion block', () => {
 test('scripts are classic defer', () => {
   const tags = html().match(/<script\b[^>]*>/g) || [];
   assert.ok(tags.some((t) => /src="js\/main\.js"/.test(t)), 'js/main.js is not loaded');
-  for (const t of tags) {
+  for (const t of tags.filter((x) => /\bsrc=/.test(x))) {
     assert.match(t, /\bdefer\b/, t);
     assert.doesNotMatch(t, /type="module"/, t);
   }
@@ -169,7 +171,7 @@ test('main.js is classic, guarded, and wires tabs', () => {
   assert.ok(fs.existsSync(JS_PATH), 'js/main.js missing');
   const js = fs.readFileSync(JS_PATH, 'utf8');
   assert.doesNotMatch(js, /^\s*(import|export)\s/m);
-  assert.match(js, /classList\.add\('js'\)/);
+  assert.doesNotMatch(js, /classList\.add\('js'\)/);
   assert.match(js, /'IntersectionObserver' in window/);
   assert.match(js, /threshold:\s*0\.35/);
   assert.match(js, /is-solid/);
@@ -183,7 +185,31 @@ test('tabs a11y', () => {
   assert.strictEqual((h.match(/role="tab"/g) || []).length, 3);
   assert.strictEqual((h.match(/role="tabpanel"/g) || []).length, 3);
   const panels = h.match(/<div\b[^>]*role="tabpanel"[^>]*>/g);
-  assert.strictEqual(panels.filter((t) => /\bhidden\b/.test(t)).length, 2);
+  assert.strictEqual(panels.filter((t) => /\bhidden\b/.test(t)).length, 0);
+  for (const id of ['people', 'venues', 'built']) {
+    assert.match(h, new RegExp(`role="tab" id="tab-${id}" aria-controls="panel-${id}"`));
+    assert.match(h, new RegExp(`role="tabpanel" tabindex="0" id="panel-${id}"`));
+  }
+  assert.doesNotMatch(h, /\bid="(people|venues|built)"/);
+  assert.match(css(), /html:not\(\.js\) \.tablist \{ display: none; \}/);
+});
+
+test('js flag is set by an inline script in head', () => {
+  const head = html().split('</head>')[0];
+  assert.match(head, /<script>document\.documentElement\.classList\.add\('js'\)<\/script>/);
+});
+
+test('open graph and twitter meta', () => {
+  const h = html();
+  assert.match(h, /<meta property="og:title" content="Chatterbox">/);
+  assert.match(h, /<meta property="og:image" content="img\/chatter_happy2_cafe-960\.webp">/);
+  assert.match(h, /<meta name="twitter:card" content="summary_large_image">/);
+});
+
+test('header nav hides below 800px and never wraps', () => {
+  assert.match(css(), /@media \(max-width: 799px\) \{\s*\.site-nav \{ display: none; \}/);
+  const nav = cssRules().find((r) => r.selector === '.site-nav a');
+  assert.ok(nav && /white-space:\s*nowrap/.test(nav.body));
 });
 
 test('legend copy', () => {
@@ -209,8 +235,8 @@ test('tabs.js loads before main.js', () => {
 // ---- Task 5: diagram and stack ----
 test('diagram', () => {
   const h = html();
-  const m = h.match(/id="built"[\s\S]*?<\/section>/);
-  assert.ok(m, '#built');
+  const m = h.match(/id="panel-built"[\s\S]*?<\/section>/);
+  assert.ok(m, '#panel-built');
   const built = m[0];
   const svgs = built.match(/<svg\b[^>]*>[\s\S]*?<\/svg>/g) || [];
   assert.ok(svgs.length >= 1);

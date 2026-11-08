@@ -1,8 +1,5 @@
 // Classic script (no modules) so the page also works from file://.
 (function () {
-  var root = document.documentElement;
-  root.classList.add('js');
-
   if (window.ChatterTabs) ChatterTabs.initTabs(document.getElementById('how'));
 
   var targets = Array.prototype.slice.call(document.querySelectorAll('.reveal, .panel'));
@@ -24,8 +21,8 @@
   }, { threshold: 0.35 });
   targets.forEach(function (el) { revealObserver.observe(el); });
 
-  // Header turns solid exactly when the legend band crosses the top line of the viewport
-  // (which means #p6 has scrolled past), in both scroll directions. The zero-height root
+  // The header is always solid. Once the legend band crosses the top line of the viewport
+  // (#p6 has scrolled past), in both scroll directions, it gains a mint strip underneath. The zero-height root
   // at the top edge makes the observer fire only at that crossing.
   if (legend && header) {
     var headerObserver = new IntersectionObserver(function (entries) {

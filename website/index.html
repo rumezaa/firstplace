@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chatterbox</title>
   <meta name="description" content="Chatterbox puts a small light on each caf&eacute; table. Green means come sit, I'm open to talk. A friendlier way to meet people in your city.">
+  <meta property="og:title" content="Chatterbox">
+  <meta property="og:description" content="A light on the table that says: come say hi.">
+  <meta property="og:image" content="img/chatter_happy2_cafe-960.webp">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#fffaf2">
+  <script>document.documentElement.classList.add('js')</script>
   <link rel="icon" type="image/png" href="img/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +20,7 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="#p1"><img src="img/logo.png" width="36" height="36" alt="Chatterbox logo"><span>Chatterbox</span></a>
+    <a class="brand" href="#p1"><img src="img/logo.png" width="36" height="36" alt=""><span>Chatterbox</span></a>
     <nav class="site-nav" aria-label="Sections">
       <a href="#people">For people</a>
       <a href="#venues">For venues</a>
@@ -54,17 +59,17 @@
     <article class="panel panel--tl" id="p3">
       <picture>
         <source type="image/webp" srcset="img/chatter_cafe_hope-960.webp 960w, img/chatter_cafe_hope-1920.webp 1920w" sizes="100vw">
-        <img src="img/chatter_cafe_hope-1920.webp" width="1920" height="1072" alt="The green character notices a table with a green light on it, with two friendly characters sitting at it." loading="lazy" decoding="async">
+        <img src="img/chatter_cafe_hope-1920.webp" width="1920" height="1072" alt="The green character notices two friendly characters at a caf&eacute; table with an empty chair." loading="lazy" decoding="async">
       </picture>
       <div class="card reveal">
         <h2>What if the table told you?</h2>
-        <p>A small light on each table: green means &quot;come sit, I'm open to talk.&quot;</p>
+        <p>A small light on each table: green means &ldquo;come sit, I&rsquo;m open to talk.&rdquo;</p>
       </div>
     </article>
     <article class="panel panel--br" id="p4">
       <picture>
         <source type="image/webp" srcset="img/chatter_hope_study-960.webp 960w, img/chatter_hope_study-1920.webp 1920w" sizes="100vw">
-        <img src="img/chatter_hope_study-1920.webp" width="1920" height="1072" alt="The green character walks toward a table where a blue and a purple character are studying." loading="lazy" decoding="async">
+        <img src="img/chatter_hope_study-1920.webp" width="1920" height="1072" alt="The green character walks toward a blue and a purple character studying in a cosy library room." loading="lazy" decoding="async">
       </picture>
       <div class="card reveal">
         <h2>Just pull up a chair.</h2>
@@ -108,15 +113,15 @@
     <div class="band-inner">
       <h2>How it works</h2>
       <div class="tablist" role="tablist" aria-label="How it works">
-        <button type="button" role="tab" id="tab-people" aria-controls="people" aria-selected="true">For people</button>
-        <button type="button" role="tab" id="tab-venues" aria-controls="venues" aria-selected="false" tabindex="-1">For venues</button>
-        <button type="button" role="tab" id="tab-built" aria-controls="built" aria-selected="false" tabindex="-1">How we built it</button>
+        <button type="button" role="tab" id="tab-people" aria-controls="panel-people" aria-selected="true">For people</button>
+        <button type="button" role="tab" id="tab-venues" aria-controls="panel-venues" aria-selected="false" tabindex="-1">For venues</button>
+        <button type="button" role="tab" id="tab-built" aria-controls="panel-built" aria-selected="false" tabindex="-1">How we built it</button>
       </div>
 
-      <div class="tabpanel" role="tabpanel" id="people" aria-labelledby="tab-people">
+      <div class="tabpanel" role="tabpanel" tabindex="0" id="panel-people" aria-labelledby="tab-people">
         <picture class="tab-banner">
           <source type="image/webp" srcset="img/chatter_lonely_park-960.webp 960w, img/chatter_lonely_park-1920.webp 1920w" sizes="(min-width: 960px) 880px, 100vw">
-          <img src="img/chatter_lonely_park-1920.webp" width="1920" height="1072" alt="The green character sits alone on a park bench while a small group chats nearby." loading="lazy" decoding="async">
+          <img src="img/chatter_lonely_park-1920.webp" width="1920" height="1072" alt="The green character peeks out from behind a tree at a group having a picnic." loading="lazy" decoding="async">
         </picture>
         <ol class="steps">
           <li>Scan in at the kiosk.</li>
@@ -128,7 +133,7 @@
         </ol>
       </div>
 
-      <div class="tabpanel" role="tabpanel" id="venues" aria-labelledby="tab-venues" hidden>
+      <div class="tabpanel" role="tabpanel" tabindex="0" id="panel-venues" aria-labelledby="tab-venues">
         <picture class="tab-banner">
           <source type="image/webp" srcset="img/chatter_study_happy-960.webp 960w, img/chatter_study_happy-1920.webp 1920w" sizes="(min-width: 960px) 880px, 100vw">
           <img src="img/chatter_study_happy-1920.webp" width="1920" height="1072" alt="Characters studying and chatting happily together at a table." loading="lazy" decoding="async">
@@ -156,10 +161,10 @@
         <a class="btn" href="#contact">Contact us</a>
       </div>
 
-      <div class="tabpanel" role="tabpanel" id="built" aria-labelledby="tab-built" hidden>
+      <div class="tabpanel" role="tabpanel" tabindex="0" id="panel-built" aria-labelledby="tab-built">
         <picture class="tab-banner">
           <source type="image/webp" srcset="img/chatter_study_alone-960.webp 960w, img/chatter_study_alone-1920.webp 1920w" sizes="(min-width: 960px) 880px, 100vw">
-          <img src="img/chatter_study_alone-1920.webp" width="1920" height="1072" alt="A character studies alone at a table with a laptop." loading="lazy" decoding="async">
+          <img src="img/chatter_study_alone-1920.webp" width="1920" height="1072" alt="The green character sits alone at a long library table with an open book." loading="lazy" decoding="async">
         </picture>
         <h3>How it fits together</h3>
         <div class="diagram-slot">
@@ -180,7 +185,7 @@
         <h3>Our privacy promises</h3>
         <ul class="plain">
           <li>A table box only ever learns a colour.</li>
-          <li>Saying no looks exactly like "not available".</li>
+          <li>Saying no looks exactly like &ldquo;not available&rdquo;.</li>
           <li>Venues see totals, never people.</li>
           <li>If you block someone, you never see each other again.</li>
           <li>Socials are shared only when both people say yes.</li>
@@ -191,7 +196,7 @@
   </main>
 
   <footer id="contact" class="site-footer">
-    <img src="img/logo.png" width="48" height="48" alt="Chatterbox logo">
+    <img src="img/logo.png" width="48" height="48" alt="">
     <p class="footer-name">Chatterbox &middot; Made in Calgary</p>
     <h2>Contact us</h2>
     <p>We're setting up venue sign-ups. Check back soon.</p>

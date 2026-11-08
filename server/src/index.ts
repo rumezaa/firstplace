@@ -11,6 +11,7 @@ import { actions } from './routes/actions.js';
 import { conversations } from './routes/conversations.js';
 import { hw } from './routes/hw.js';
 import { me } from './routes/me.js';
+import { meetups } from './routes/meetups.js';
 import { venues } from './routes/venues.js';
 
 const app = new Hono<{ Variables: AuthVars }>();
@@ -67,6 +68,7 @@ app.get('/tables/:tableId/view', async (c) => {
 app.route('/me', me);
 app.route('/', conversations);
 app.route('/', actions);
+app.route('/', meetups);
 
 app.notFound((c) => c.json({ error: 'Not found.' }, 404));
 

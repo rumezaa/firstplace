@@ -6,6 +6,7 @@ const jobs: { name: string; everyMs: number; sql: string }[] = [
   { name: 'auto check-out (3h)', everyMs: 5 * 60_000, sql: 'select public.auto_checkout_stale() as n' },
   { name: 'familiar faces matcher', everyMs: 15 * 60_000, sql: 'select public.refresh_familiar_faces() as n' },
   { name: '10pm box shutoff', everyMs: 60_000, sql: 'select app_private.close_boxes_for_night() as n' },
+  { name: 'expire stale meetup plans', everyMs: 60 * 60_000, sql: 'select app_private.expire_stale_meetups() as n' },
   { name: 'forget check-ins older than 90 days', everyMs: 24 * 60 * 60_000, sql: 'select app_private.purge_old_checkins() as n' },
 ];
 

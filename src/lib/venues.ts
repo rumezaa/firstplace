@@ -29,6 +29,47 @@ export async function fetchTables(venueId: string): Promise<VenueTable[]> {
   return api.get<VenueTable[]>(`/venues/${venueId}/tables`);
 }
 
+/** The room in counts, plus green tables' shared interests. Never who. `like_you` needs 2+ people. */
+export interface VenueRoom {
+  people_here: number;
+  open_to_talk: number;
+  /** You're checked in here (with or without a table). */
+  here: boolean;
+  like_you: { interest: string; people: number } | null;
+  /**
+   * Tables on green (they've asked for company) and what you share with the
+   * person there. Only when you're checked in here; no names until you chat.
+   */
+  green?: { table_id: string; interests: string[] }[];
+}
+
+export async function fetchRoom(venueId: string): Promise<VenueRoom> {
+  return api.get<VenueRoom>(`/venues/${venueId}/room`);
+}
+
+/** "I'm here" from the entrance tag: checks you in, keeps a table you hold here. */
+export async function enterVenue(venueId: string): Promise<{ new: boolean; table_id: string | null }> {
+  return api.post(`/venues/${venueId}/enter`);
+}
+
+/** "12 people here · 4 open to talk · 3 into hiking like you" */
+export function roomSummary(room: VenueRoom): string {
+  const people = room.people_here === 1 ? '1 person here' : `${room.people_here} people here`;
+  return [
+    room.people_here ? people : 'Nobody checked in yet',
+    `${room.open_to_talk} open to talk`,
+    room.like_you ? `${room.like_you.people} into ${room.like_you.interest} like you` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** "You both like hiking and board games." */
+export function sharedLine(interests: string[]): string {
+  const list = interests.length > 1 ? `${interests.slice(0, -1).join(', ')} and ${interests.at(-1)}` : interests[0];
+  return `You both like ${list}.`;
+}
+
 export async function fetchBusyHours(venueId: string): Promise<BusyHour[]> {
   return api.get<BusyHour[]>(`/venues/${venueId}/busy-hours`);
 }

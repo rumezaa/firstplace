@@ -6,7 +6,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { Text } from '@/components/Text';
 
 import { fetchOpenCheckin } from '@/lib/checkins';
-import { fetchConversation, parseBoxCode } from '@/lib/conversations';
+import { fetchConversation, isFloorCode, parseBoxCode } from '@/lib/conversations';
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import { fetchTables, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
@@ -54,7 +54,7 @@ export default function CheckinScreen() {
         </Card>
       ) : null}
 
-      <Scanner onTable={openTable} />
+      <Scanner onTable={openTable} onFloor={(venueId) => router.push(`/floor/${venueId}?here=1`)} />
       <PickByHand onTable={openTable} />
     </Screen>
   );
@@ -62,7 +62,7 @@ export default function CheckinScreen() {
 
 /* --------------------------------------------------------------- scanner -- */
 
-function Scanner({ onTable }: { onTable: (id: string) => void }) {
+function Scanner({ onTable, onFloor }: { onTable: (id: string) => void; onFloor: (venueId: string) => void }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [open, setOpen] = useState(false);
   const [scanned, setScanned] = useState(false);
@@ -123,7 +123,9 @@ function Scanner({ onTable }: { onTable: (id: string) => void }) {
               setScanned(true);
               setOpen(false);
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onTable(id);
+              // An entrance code carries a venue id, not a table id.
+              if (isFloorCode(data)) onFloor(id);
+              else onTable(id);
             }}
           />
         ) : null}

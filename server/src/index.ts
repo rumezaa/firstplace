@@ -8,6 +8,7 @@ import { asSystem, asUser, pool } from './db.js';
 import { env } from './env.js';
 import { calgaryStatus, startCalgaryData } from './calgary.js';
 import { startJobs } from './jobs.js';
+import { serveTag } from './tagLinks.js';
 import { actions } from './routes/actions.js';
 import { conversations } from './routes/conversations.js';
 import { hw } from './routes/hw.js';
@@ -25,6 +26,11 @@ app.get('/health', async (c) => {
   const db = await pool.query('select 1').then(() => 'ok').catch(() => 'down');
   return c.json({ ok: db === 'ok', db, auth0: Boolean(env.auth0Domain), gemini: Boolean(env.geminiApiKey), calgary: calgaryStatus() });
 });
+
+// NFC stickers and printed QR codes: tiny HTML pages that hand off to the app
+// (see src/tagLinks.ts). No login, no database.
+app.get('/t/:id', serveTag('table'));
+app.get('/v/:id', serveTag('floor'));
 
 // The hardware light authenticates with its own device key, not a user login.
 app.route('/hw', hw);

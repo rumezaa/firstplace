@@ -1,10 +1,13 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { APP_NAME, APP_PITCH, APP_TAGLINE } from '@/lib/branding';
 import { errorMessage } from '@/lib/api';
-import { Body, Button, Caption, Card, ErrorNote, Screen, SectionTitle, Title } from '@/components/ui';
+import { colors } from '@/lib/theme';
+import { Wordmark } from '@/components/AppMark';
+import { LightPole } from '@/components/LightPole';
+import { Button, Caption, ErrorNote } from '@/components/ui';
 import {
   AUTH0_AVAILABLE,
   AUTH0_REDIRECT_URI,
@@ -12,9 +15,9 @@ import {
   useSession,
 } from '@/providers/SessionProvider';
 
+/** Welcome (design kit v2, 2.1): logo, the lit pole, one instruction, sign in. */
 export default function SignIn() {
   const { session, signInWithAuth0, signInWithDemoAccount } = useSession();
-
   const [busy, setBusy] = useState<null | 'auth0' | 'demo'>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,56 +36,50 @@ export default function SignIn() {
   }
 
   return (
-    <Screen>
-      <View className="gap-2 pb-2 pt-10">
-        <Title>{APP_NAME}</Title>
-        <Body>{APP_TAGLINE}</Body>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
+      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 20 }}>
+        <Wordmark size={20} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <LightPole light="green" size="lg" />
+        </View>
+        <Text
+          accessibilityRole="header"
+          style={{ fontSize: 34, lineHeight: 41, fontWeight: '700', letterSpacing: -0.7, color: colors.espresso }}
+        >
+          When the light&apos;s green, say hi.
+        </Text>
+        <Text style={{ fontSize: 17, lineHeight: 23, color: colors.mocha, marginTop: 8 }}>
+          FirstPlace tables show who&apos;s open to talk. No profiles to scroll, just people nearby.
+        </Text>
+        {error ? (
+          <View style={{ marginTop: 16 }}>
+            <ErrorNote error={error} />
+          </View>
+        ) : null}
       </View>
 
-      <Card className="gap-4">
-        <SectionTitle>Sign in</SectionTitle>
-        <Body>{APP_PITCH}</Body>
-
+      <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24, gap: 8 }}>
         {AUTH0_AVAILABLE ? (
           <Button
-            label="Continue"
+            label="Get started"
             accessibilityHint="Opens a secure sign-in page. You can use Google or your email."
             busy={busy === 'auth0'}
             onPress={() => run('auth0', signInWithAuth0)}
           />
-        ) : (
-          <Caption>
-            Secure sign-in (Auth0) isn&apos;t set up yet. Add EXPO_PUBLIC_AUTH0_DOMAIN,
-            EXPO_PUBLIC_AUTH0_CLIENT_ID and EXPO_PUBLIC_AUTH0_AUDIENCE to .env.
-          </Caption>
-        )}
-
-        {__DEV__ && AUTH0_AVAILABLE ? (
-          <Caption>Auth0 callback URL for this device: {AUTH0_REDIRECT_URI}</Caption>
         ) : null}
-      </Card>
-
-      {DEMO_ACCOUNT_AVAILABLE ? (
-        <Card accent="amber" className="gap-3">
-          <SectionTitle>Demo account</SectionTitle>
-          <Caption>
-            Signs in as the seeded demo user, so a live demo never depends on a sign-in page.
-            Remove EXPO_PUBLIC_DEMO_EMAIL from .env to hide this.
-          </Caption>
+        {DEMO_ACCOUNT_AVAILABLE ? (
           <Button
-            label="Continue as demo user"
-            variant="quiet"
+            label="Try the demo account"
+            variant={AUTH0_AVAILABLE ? 'quiet' : 'primary'}
             busy={busy === 'demo'}
             onPress={() => run('demo', signInWithDemoAccount)}
           />
-        </Card>
-      ) : null}
-
-      {error ? <ErrorNote error={error} /> : null}
-
-      <Caption className="px-2 text-center">
-        We never show other people where you are. Check-ins are only ever counted, never named.
-      </Caption>
-    </Screen>
+        ) : null}
+        <Caption className="text-center">For adults 18 and over in Calgary.</Caption>
+        {__DEV__ && AUTH0_AVAILABLE ? (
+          <Caption className="text-center">Dev: Auth0 callback {AUTH0_REDIRECT_URI}</Caption>
+        ) : null}
+      </View>
+    </SafeAreaView>
   );
 }

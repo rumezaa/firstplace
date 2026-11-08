@@ -1,8 +1,9 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePathname, useRouter } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MIN_TAP_TARGET, colors } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 /**
  * The Help button: same place on every screen (top right), one tap away.
@@ -20,24 +21,23 @@ export function HelpButton() {
       accessibilityRole="button"
       accessibilityLabel="Help"
       accessibilityHint="Call 911, leave now, get staff, or talk to someone"
+      hitSlop={6}
       style={{
         position: 'absolute',
-        top: insets.top + 8,
+        top: insets.top + 6,
         right: 12,
-        minHeight: MIN_TAP_TARGET - 8,
-        minWidth: 72,
-        paddingHorizontal: 16,
+        height: 32,
+        paddingLeft: 10,
+        paddingRight: 12,
         borderRadius: 999,
-        backgroundColor: colors.brick,
+        backgroundColor: colors.brickSoft,
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 6,
+        gap: 4,
       }}
     >
-      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Help</Text>
+      <Ionicons name="help-buoy-outline" size={17} color={colors.brick} />
+      <Text style={{ color: colors.brick, fontWeight: '600', fontSize: 15 }}>Help</Text>
     </Pressable>
   );
 }

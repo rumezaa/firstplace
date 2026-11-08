@@ -1,30 +1,60 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Platform, Pressable, View } from 'react-native';
 import { Text } from '@/components/Text';
 import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 import { LIGHT_INFO, fetchFloor, type BoxLight, type FloorTable } from '@/lib/conversations';
 import { FLOOR_LAYOUTS, type FloorLayout, type FloorPlan } from '@/lib/floorLayouts';
-import { fetchVenue } from '@/lib/venues';
+import { errorMessage } from '@/lib/api';
+import { enterVenue, fetchRoom, fetchVenue, roomSummary } from '@/lib/venues';
 import { colors } from '@/lib/theme';
 import { useAsync } from '@/hooks/useAsync';
+import { useSession } from '@/providers/SessionProvider';
 import { Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
  * The floor view (docs/specs/2026-11-08-floor-map-design.md). An NFC tag at the
- * entrance opens <server>/v/<venueId>, which forwards to floor/<venueId>: the whole floor at a glance,
- * every table's live light. Pick one; from there it's the usual table flow.
- * Colours only, never who is sitting where.
+ * entrance opens <server>/v/<venueId>, which forwards to floor/<venueId>?here=1:
+ * the whole floor at a glance, every table's live light, and the room in
+ * counts. Arriving from the tag checks you in to the venue (no profile goes
+ * over NFC; your login says who you are). Pick a table; from there it's the
+ * usual table flow. Colours and counts only, never who is sitting where.
  */
 const DOT: Record<BoxLight, string> = { green: colors.go, yellow: colors.ask, red: colors.stop, off: '#B9BCB8' };
 const CHIP: Record<BoxLight, string> = { green: 'Say hi', yellow: 'Ask first', red: 'Not now', off: 'Just a table' };
 
 export default function FloorScreen() {
-  const { venueId } = useLocalSearchParams<{ venueId: string }>();
+  const { venueId, here } = useLocalSearchParams<{ venueId: string; here?: string }>();
   const router = useRouter();
+  const { session } = useSession();
   const venue = useAsync(() => fetchVenue(venueId), [venueId]);
   const floor = useAsync(() => fetchFloor(venueId), [venueId]);
+  const room = useAsync(() => fetchRoom(venueId), [venueId]);
+  const [entering, setEntering] = useState(false);
+  const [enterError, setEnterError] = useState<string | null>(null);
+
+  const reloadRoom = room.reload;
+  const checkIn = useCallback(async () => {
+    setEntering(true);
+    setEnterError(null);
+    try {
+      await enterVenue(venueId);
+      await reloadRoom();
+    } catch (e) {
+      setEnterError(errorMessage(e));
+    } finally {
+      setEntering(false);
+    }
+  }, [venueId, reloadRoom]);
+
+  // Opened from the entrance tag: check in once, without a tap.
+  const autoEntered = useRef(false);
+  useEffect(() => {
+    if (here !== '1' || !session || autoEntered.current) return;
+    autoEntered.current = true;
+    void checkIn();
+  }, [here, session, checkIn]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // useAsync keeps the last good data when a refresh fails, so the lights stay
   // on screen with an error and Retry (spec: behaviour).
@@ -34,15 +64,18 @@ export default function FloorScreen() {
   const reload = floor.reload;
   useFocusEffect(
     useCallback(() => {
-      const t = setInterval(() => void reload(), 3000);
+      const t = setInterval(() => {
+        void reload();
+        void reloadRoom();
+      }, 3000);
       return () => clearInterval(t);
-    }, [reload]),
+    }, [reload, reloadRoom]),
   );
 
   const layout = FLOOR_LAYOUTS[venueId];
   const counts: Record<BoxLight, number> = { green: 0, yellow: 0, red: 0, off: 0 };
   for (const t of tables) counts[t.light] += 1;
-  const summary =
+  const lightSummary =
     [counts.green ? `${counts.green} open to talk` : '', counts.yellow ? `${counts.yellow} asking first` : '']
       .filter(Boolean)
       .join(' · ') || 'No open lights right now';
@@ -64,7 +97,15 @@ export default function FloorScreen() {
             <Caption>{floor.error ? 'Offline' : 'Live'}</Caption>
           </View>
         </View>
-        <Body>{loaded ? summary : 'Reading the lights on this floor.'}</Body>
+        <Body>{room.data ? roomSummary(room.data) : loaded ? lightSummary : 'Reading the lights on this floor.'}</Body>
+        <CheckInRow
+          signedIn={Boolean(session)}
+          here={room.data?.here ?? false}
+          busy={entering}
+          error={enterError}
+          onCheckIn={() => void checkIn()}
+          onSignIn={() => router.push('/sign-in')}
+        />
       </Card>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -113,6 +154,45 @@ export default function FloorScreen() {
         </Pressable>
       ))}
     </Screen>
+  );
+}
+
+/** "You're checked in here", an "I'm here" button, or a nudge to sign in. */
+function CheckInRow({
+  signedIn,
+  here,
+  busy,
+  error,
+  onCheckIn,
+  onSignIn,
+}: {
+  signedIn: boolean;
+  here: boolean;
+  busy: boolean;
+  error: string | null;
+  onCheckIn: () => void;
+  onSignIn: () => void;
+}) {
+  if (!signedIn) {
+    return (
+      <View className="mt-2 gap-2">
+        <Caption>Sign in to check in and see what you have in common with people here.</Caption>
+        <Button label="Sign in" variant="secondary" onPress={onSignIn} />
+      </View>
+    );
+  }
+  if (here) return <Caption>You&apos;re checked in here.</Caption>;
+  return (
+    <View className="mt-2 gap-2">
+      {error ? <ErrorNote error={error} onRetry={onCheckIn} /> : null}
+      <Button
+        label="I'm here"
+        variant="secondary"
+        busy={busy}
+        accessibilityHint="Checks you in to this place. Nobody sees your name."
+        onPress={onCheckIn}
+      />
+    </View>
   );
 }
 

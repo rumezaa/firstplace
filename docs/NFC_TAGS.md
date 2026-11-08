@@ -5,7 +5,9 @@ Every sticker and printed QR holds a link to the **API server**, not to the app:
 | Tag | Link | Opens |
 | --- | --- | --- |
 | Table box | `<base>/t/<tableId>` | `<APP_LINK_BASE>table/<tableId>` |
-| Venue entrance | `<base>/v/<venueId>` | `<APP_LINK_BASE>floor/<venueId>` |
+| Venue entrance | `<base>/v/<venueId>` | `<APP_LINK_BASE>floor/<venueId>?here=1` |
+
+**Entrance tag = check-in.** `?here=1` makes the floor screen call `POST /venues/<id>/enter`: you're checked in to the venue with no table (a table you already hold there is kept). Nothing goes over NFC; the login says who you are. The screen then shows the room in counts only (`GET /venues/<id>/room`, `db/migrations/170_venue_presence.sql`): "12 people here · 4 open to talk · 3 into hiking like you". The interest line needs two or more people, respects "Show what we have in common" and blocks, and never says who. Incognito people aren't counted. Opening the floor from inside the app shows an **I'm here** button instead.
 
 The server answers with a tiny page that jumps into the app and shows a big **Open in app** button (Android sometimes blocks the automatic jump). No login, no database call. Code: `server/src/tagLinks.ts`.
 
@@ -52,7 +54,7 @@ NFC Tools → **Write** → Add a record → **URL/URI** → paste the link → 
 1. Tap a table tag with an Android phone → the table screen opens.
 2. Same tag with an iPhone.
 3. Signed out → the table shows "Sign in to claim"; check it comes back to the table after signing in.
-4. Entrance tag → the floor map opens.
+4. Entrance tag → the floor map opens and says "You're checked in here."
 5. Scan the QR on the virtual box screen → lands in the same place.
 6. Switch `APP_LINK_BASE` between Expo Go and a dev build (restart the server) → the same sticker still works.
 

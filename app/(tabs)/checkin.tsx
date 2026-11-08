@@ -54,7 +54,7 @@ export default function CheckinScreen() {
         </Card>
       ) : null}
 
-      <Scanner onTable={openTable} onFloor={(venueId) => router.push(`/floor/${venueId}`)} />
+      <Scanner onTable={openTable} onFloor={(venueId) => router.push(`/floor/${venueId}?here=1`)} />
       <PickByHand onTable={openTable} />
     </Screen>
   );

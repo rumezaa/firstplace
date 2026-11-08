@@ -18,10 +18,10 @@ test('table tags forward to <APP_LINK_BASE>table/<id>, lowercased', () => {
   assert.match(html, /href="https:\/\/app\.example\.com\/table\/e6fae905-bf12-2dfc-e5fe-8a96a63a8955">Open on the web/);
 });
 
-test('venue tags forward to floor/<id>', () => {
+test('venue tags forward to floor/<id>?here=1, which checks you in', () => {
   const { status, html } = tagPage('floor', ID.toLowerCase());
   assert.equal(status, 200);
-  assert.match(html, /href="exp:\/\/192\.168\.1\.42:8081\/--\/floor\/e6fae905-bf12-2dfc-e5fe-8a96a63a8955"/);
+  assert.match(html, /href="exp:\/\/192\.168\.1\.42:8081\/--\/floor\/e6fae905-bf12-2dfc-e5fe-8a96a63a8955\?here=1"/);
 });
 
 test('anything that is not a UUID is a 404 with no app link', () => {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import type { AuthVars } from '../auth.js';
+import { requireAuth, type AuthVars } from '../auth.js';
 import { asUser } from '../db.js';
 import { env } from '../env.js';
 import { areaIsFresh, placesEnabled, syncArea, type Area } from '../places.js';
@@ -153,6 +153,29 @@ venues.get('/:id/floor', async (c) => {
     ),
   );
   return c.json(rows.rows);
+});
+
+/**
+ * "I'm here": the entrance tag checks you in to the venue, with no table.
+ * Nothing is sent over NFC; the login says who you are. Keeps an existing
+ * table claim at this venue (see db/migrations/170_venue_presence.sql).
+ */
+venues.post('/:id/enter', requireAuth, async (c) => {
+  const row = await asUser(c.get('userId'), (db) =>
+    db.query('select public.enter_venue($1) as r', [c.req.param('id')]),
+  );
+  return c.json(row.rows[0].r);
+});
+
+/**
+ * The room, counts only: people here, tables open to talk, and the interest
+ * most people here share with you (two or more, never who).
+ */
+venues.get('/:id/room', async (c) => {
+  const row = await asUser(c.get('userId'), (db) =>
+    db.query('select public.venue_room($1) as r', [c.req.param('id')]),
+  );
+  return c.json(row.rows[0].r);
 });
 
 venues.get('/:id/busy-hours', async (c) => {

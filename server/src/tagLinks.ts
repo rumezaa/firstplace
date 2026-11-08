@@ -6,7 +6,7 @@ import { env } from './env.js';
 // dev build (or a new laptop IP) is a config change, never a sticker rewrite.
 //
 //   /t/<tableId>  table box     → <APP_LINK_BASE>table/<tableId>
-//   /v/<venueId>  venue entrance → <APP_LINK_BASE>floor/<venueId>
+//   /v/<venueId>  venue entrance → <APP_LINK_BASE>floor/<venueId>?here=1 (checks you in)
 //
 // No login and no database call: the page is static apart from the id, so a
 // tap is instant. The app's own screens do the lookups.
@@ -30,7 +30,8 @@ export function tagPage(kind: TagKind, rawId: string): { status: 200 | 404; html
     return { status: 404, html: page('Link not recognised', '<p>This tag doesn’t point at a FirstPlace table or venue.</p>') };
   }
   const id = rawId.toLowerCase();
-  const appLink = `${env.appLinkBase}${kind}/${id}`;
+  // An entrance tag means you're standing in the venue: ?here=1 checks you in.
+  const appLink = `${env.appLinkBase}${kind}/${id}${kind === 'floor' ? '?here=1' : ''}`;
   const webLink = env.webAppUrl ? `${env.webAppUrl}/${kind}/${id}` : null;
 
   // JSON.stringify gives a safe JS string literal; the < escape stops a

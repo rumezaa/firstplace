@@ -17,3 +17,14 @@ test('allows partial updates, empty optional lists, and adult profiles', () => {
     assert.equal(profileProblem(body), null);
   }
 });
+
+test('gender: known values, self-describe rules, onboarded flag', () => {
+  assert.equal(profileProblem({ gender: 'woman' }), null);
+  assert.equal(profileProblem({ gender: null }), null);
+  assert.match(profileProblem({ gender: 'robot' }) ?? '', /options/);
+  assert.equal(profileProblem({ gender: 'self_describe', gender_self_describe: 'genderfluid' }), null);
+  assert.match(profileProblem({ gender: 'self_describe', gender_self_describe: 'x'.repeat(41) }) ?? '', /40/);
+  assert.match(profileProblem({ gender: 'man', gender_self_describe: 'x' }) ?? '', /self-describe/);
+  assert.equal(profileProblem({ onboarded: true }), null);
+  assert.match(profileProblem({ onboarded: false }) ?? '', /onboarded/);
+});

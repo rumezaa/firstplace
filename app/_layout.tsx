@@ -46,7 +46,7 @@ function RootNavigator() {
     );
   }
 
-  const protectedRoutes = ['meetup', 'dashboard', 'waiting', 'conversation', 'rewards'];
+  const protectedRoutes = ['meetup', 'dashboard', 'waiting', 'conversation', 'rewards', 'onboarding'];
   if (!session && protectedRoutes.includes(segments[0] ?? '')) return <Redirect href="/sign-in" />;
 
   return (
@@ -71,6 +71,7 @@ function RootNavigator() {
       <Stack.Screen name="table/[id]" options={{ title: '' }} />
       <Stack.Screen name="floor/[venueId]" options={{ title: '' }} />
       <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'fade' }} />
+      <Stack.Screen name="onboarding/index" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="waiting/[requestId]" options={{ title: 'Request sent' }} />
       <Stack.Screen name="conversation" options={{ title: 'In conversation' }} />
       <Stack.Screen name="meetup/[connectionId]" options={{ title: 'Plan the next one' }} />

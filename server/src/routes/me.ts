@@ -13,6 +13,8 @@ me.use('*', requireAuth);
 const PROFILE_FIELDS = [
   'name', 'interests', 'vibe_tags', 'incognito', 'familiar_faces_opt_in',
   'languages', 'topics', 'comm_pref', 'share_comm_pref', 'share_overlap', 'age_range',
+  // Private: only ever returned to the owner by GET /me (see migration 220).
+  'gender', 'gender_self_describe',
 ] as const;
 
 me.get('/', async (c) => {
@@ -34,6 +36,12 @@ me.patch('/', async (c) => {
       sets.push(`${field} = $${values.length}`);
     }
   }
+  // Choosing anything other than "self-describe" clears the free text.
+  if ('gender' in body && body.gender !== 'self_describe' && !('gender_self_describe' in body)) {
+    sets.push('gender_self_describe = null');
+  }
+  // `onboarded: true` marks the first-time flow done; the server sets the time.
+  if (body.onboarded === true) sets.push('onboarded_at = coalesce(onboarded_at, now())');
   if (sets.length === 0) throw new HTTPException(400, { message: 'Nothing to update.' });
   const row = await asUser(c.get('userId'), (db) =>
     db.query(`update public.users set ${sets.join(', ')} where id = auth.uid() returning *`, values),

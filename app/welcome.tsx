@@ -13,7 +13,7 @@ import { colors } from '@/lib/theme';
 /** Shown once, right after the first sign-in. */
 export const INTRO_SEEN_KEY = 'firstplace.intro.v1';
 
-const PAGES: { light: BoxLight; title: string; body: string }[] = [
+export const PAGES: { light: BoxLight; title: string; body: string }[] = [
   {
     light: 'green',
     title: 'See who’s open to talk',

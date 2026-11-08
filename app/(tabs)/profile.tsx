@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, RefreshControl, TextInput, View } from 'react-native';
+import { RefreshControl, TextInput, View } from 'react-native';
 import { Text } from '@/components/Text';
 
 import { fetchCheckinHistory } from '@/lib/checkins';
@@ -9,6 +9,8 @@ import { errorMessage } from '@/lib/api';
 import { fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useSession } from '@/providers/SessionProvider';
+import { INTEREST_SUGGESTIONS, LANGUAGE_SUGGESTIONS, TOPIC_SUGGESTIONS, VIBE_SUGGESTIONS } from '@/lib/profileOptions';
+import { ChipGroup } from '@/components/ChipGroup';
 import {
   Badge,
   Body,
@@ -24,35 +26,13 @@ import {
   ToggleRow,
 } from '@/components/ui';
 
-/** Starting points so the chips are not an empty box on a new account. */
-const INTEREST_SUGGESTIONS = [
-  'board games',
-  'running',
-  'climbing',
-  'novels',
-  'film photography',
-  'cooking',
-  'live music',
-  'cycling',
-  'languages',
-  'chess',
-  'knitting',
-  'grad school',
-];
-
-const TOPIC_SUGGESTIONS = ['hiking', 'board games', 'Calgary food', 'music', 'books', 'travel', 'coffee', 'running', 'tech', 'art'];
-const LANGUAGE_SUGGESTIONS = ['English', 'French', 'Punjabi', 'Tagalog', 'Mandarin', 'Cantonese', 'Spanish', 'Arabic', 'Urdu', 'Hindi'];
-
-const VIBE_SUGGESTIONS = [
-  'quiet worker',
-  'laptop crowd',
-  'chatty',
-  'studying',
-  'regular',
-  'morning person',
-  'night owl',
-  'new in town',
-];
+const GENDER_OPTIONS = [
+  { value: 'woman', label: 'Woman' },
+  { value: 'man', label: 'Man' },
+  { value: 'non_binary', label: 'Non-binary' },
+  { value: 'self_describe', label: 'Self-describe' },
+  { value: 'prefer_not', label: 'Prefer not to say' },
+] as const;
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -207,6 +187,37 @@ export default function ProfileScreen() {
 
 
       <Card className="gap-3">
+        <SectionTitle>Gender (private)</SectionTitle>
+        <Caption>Only you can see this. It&apos;s never shown on your profile, at a table, or to anyone you chat with.</Caption>
+        <View className="flex-row flex-wrap gap-2">
+          {GENDER_OPTIONS.map((g) => (
+            <Chip
+              key={g.value}
+              label={g.label}
+              selected={profile.gender === g.value}
+              onPress={() => void save({ gender: profile.gender === g.value ? null : g.value })}
+            />
+          ))}
+        </View>
+        {profile.gender === 'self_describe' ? (
+          <TextInput
+            defaultValue={profile.gender_self_describe ?? ''}
+            onEndEditing={(e) => {
+              const v = e.nativeEvent.text.trim();
+              if (v) void save({ gender: 'self_describe', gender_self_describe: v.slice(0, 40) });
+            }}
+            placeholder="In your own words"
+            placeholderTextColor="#8A8F93"
+            maxLength={40}
+            accessibilityLabel="Describe your gender, up to 40 characters"
+            className="bg-cream border-border-warm text-espresso rounded-tile border px-4 py-3 text-base"
+            style={{ minHeight: 48 }}
+          />
+        ) : null}
+        {profile.gender ? <Button label="Clear" variant="quiet" onPress={() => void save({ gender: null })} /> : null}
+      </Card>
+
+      <Card className="gap-3">
         <SectionTitle>Check-in history</SectionTitle>
         {history.error ? (
           <ErrorNote error={history.error} onRetry={() => void history.reload()} />
@@ -264,43 +275,4 @@ export default function ProfileScreen() {
 function initials(name: string | null | undefined): string {
   const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
   return (parts[0]?.[0] ?? '?').toUpperCase() + (parts[1]?.[0] ?? '').toUpperCase();
-}
-
-/**
- * Shows what you picked, quietly. "Edit" opens the suggestions; "Done" closes
- * them. Keeps the profile from being a wall of forty chips.
- */
-function ChipGroup({
-  title,
-  selected,
-  suggestions,
-  onToggle,
-}: {
-  title: string;
-  selected: string[];
-  suggestions: string[];
-  onToggle: (value: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const all = Array.from(new Set([...selected, ...suggestions]));
-  const shown = editing ? all : selected;
-  return (
-    <View className="gap-2">
-      <View className="flex-row items-center justify-between">
-        <SectionTitle>{title}</SectionTitle>
-        <Pressable onPress={() => setEditing(!editing)} accessibilityRole="button" accessibilityLabel={`${editing ? 'Done editing' : 'Edit'} ${title}`} hitSlop={12}>
-          <Text className="text-clay text-[16px] font-semibold">{editing ? 'Done' : selected.length ? 'Edit' : 'Add'}</Text>
-        </Pressable>
-      </View>
-      {shown.length ? (
-        <View className="flex-row flex-wrap gap-2">
-          {shown.map((v) => (
-            <Chip key={v} label={v} selected={selected.includes(v)} onPress={editing ? () => onToggle(v) : undefined} />
-          ))}
-        </View>
-      ) : (
-        <Caption>Nothing yet.</Caption>
-      )}
-    </View>
-  );
 }

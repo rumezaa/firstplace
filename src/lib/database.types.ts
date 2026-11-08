@@ -33,6 +33,10 @@ export type Database = {
           incognito: boolean;
           familiar_faces_opt_in: boolean;
           share_overlap: boolean;
+          /** Private: only ever returned to the owner (GET /me). */
+          gender: 'woman' | 'man' | 'non_binary' | 'self_describe' | 'prefer_not' | null;
+          gender_self_describe: string | null;
+          onboarded_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -43,6 +47,9 @@ export type Database = {
           incognito?: boolean;
           familiar_faces_opt_in?: boolean;
           share_overlap?: boolean;
+          gender?: 'woman' | 'man' | 'non_binary' | 'self_describe' | 'prefer_not' | null;
+          gender_self_describe?: string | null;
+          onboarded_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -53,6 +60,9 @@ export type Database = {
           incognito?: boolean;
           familiar_faces_opt_in?: boolean;
           share_overlap?: boolean;
+          gender?: 'woman' | 'man' | 'non_binary' | 'self_describe' | 'prefer_not' | null;
+          gender_self_describe?: string | null;
+          onboarded_at?: string | null;
         };
         Relationships: [];
       };

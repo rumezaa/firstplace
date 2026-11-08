@@ -15,7 +15,7 @@ export function HelpButton() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   // Hidden on Help itself and the one-time intro (which has its own Skip).
-  if (pathname === '/help' || pathname === '/welcome') return null;
+  if (pathname === '/help' || pathname === '/welcome' || pathname === '/onboarding') return null;
 
   return (
     <Pressable

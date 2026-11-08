@@ -17,6 +17,16 @@ export function profileProblem(body: unknown): string | null {
       return `${key} must contain at most 30 non-empty labels of up to 100 characters.`;
     }
   }
+  const genders = ['woman', 'man', 'non_binary', 'self_describe', 'prefer_not'];
+  if ('gender' in fields && fields.gender !== null && !genders.includes(fields.gender as string)) {
+    return 'Choose one of the options, or skip.';
+  }
+  if ('gender_self_describe' in fields && fields.gender_self_describe !== null) {
+    const v = fields.gender_self_describe;
+    if (typeof v !== 'string' || !v.trim() || v.length > 40) return 'Describe it in 40 characters or fewer.';
+    if (fields.gender !== 'self_describe') return 'Self-description goes with "Prefer to self-describe".';
+  }
+  if ('onboarded' in fields && fields.onboarded !== true) return 'onboarded can only be set to true.';
   if ('comm_pref' in fields && fields.comm_pref !== null && (typeof fields.comm_pref !== 'string' || fields.comm_pref.length > 500)) return 'Communication preferences must be at most 500 characters.';
   return null;
 }

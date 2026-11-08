@@ -21,7 +21,7 @@ X-Device-Key: {device_key}
 1. **Config.** `server/box.local.json` (gitignored) holds the box's `base_url`, `table_id` and `device_key`. Send it to Aaron privately, not in the group chat. Fill in the Wi-Fi name and password on his laptop only.
 2. **Key.** The same key is listed in `HW_DEVICE_KEYS` in `server/.env`. To revoke a box, remove its key and restart the server.
 3. **Network.** Put the box and the laptop running the API on the same phone hotspot (2.4 GHz). Venue Wi-Fi often blocks devices from reaching each other. `base_url` is the laptop's address on that network, port 8787: get it with `ipconfig getifaddr en0` and update the file if it changes.
-4. **Table.** The config points at the chat table at Seventeenth Social. Open `/box/<table_id>` in the app's web version to see the same light on screen.
+4. **Table.** The config points at the chat table at Seventeenth Social (`e6fae905-bf12-2dfc-e5fe-8a96a63a8955`). Seeded table IDs are stable across `db:setup` resets. Open `/box/<table_id>` in the app's web version to see the same light on screen.
 
 ## Quick test
 
@@ -34,3 +34,18 @@ Claim that table in the app, switch between green, yellow and red, and the box s
 ## Before judging
 
 Turn the 10pm rule back on (`app_private.settings` → `box_hours` = `enforce`) unless the demo runs after 10pm.
+
+## Flashing with Aaron's tool
+
+On the laptop the box is plugged into (close any serial monitor first):
+
+```bash
+cp server/box.local.json <first-place-embedded>/provisioning.local.json   # then edit ssid + password there
+python tools/provision.py provision --port <PORT> --config provisioning.local.json
+python tools/provision.py info --port <PORT>                              # shows the stored table id
+python tools/provision.py qr --port <PORT> --output artifacts/table-qr.svg
+```
+
+On macOS the port looks like `/dev/cu.usbserial-XXXX` (`ls /dev/cu.*`). Delete `provisioning.local.json` afterwards.
+
+Responses the box can get: `200` with a colour, `401` wrong device key, `404` unknown table id, `400` malformed id. The last three show as a configuration fault on the box.

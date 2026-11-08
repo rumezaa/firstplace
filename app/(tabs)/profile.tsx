@@ -193,24 +193,6 @@ export default function ProfileScreen() {
           value={profile.incognito}
           onChange={(next) => void save({ incognito: next })}
         />
-        <View className="border-border-warm border-t" />
-        <ToggleRow
-          label="Familiar faces"
-          description="Let us tell you when you keep crossing paths with the same regular."
-          value={profile.familiar_faces_opt_in}
-          onChange={(next) => void save({ familiar_faces_opt_in: next })}
-        />
-        {profile.incognito ? (
-          <Caption className="text-amber mt-2">
-            While incognito, familiar faces stays off regardless of the switch above.
-          </Caption>
-        ) : null}
-      </Card>
-
-      <Card className="gap-3">
-        <SectionTitle>Rewards</SectionTitle>
-        <Caption>Visit stamps and your Calgary passport.</Caption>
-        <Button label="Open rewards" variant="quiet" onPress={() => router.push('/rewards')} />
       </Card>
 
       <Card className="gap-3">

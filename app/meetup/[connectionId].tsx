@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { errorMessage } from '@/lib/api';
@@ -25,6 +25,7 @@ import {
   type PartOfDay,
   type Slot,
 } from '@/lib/meetups';
+import { useVenueTablesRealtime } from '@/hooks/useRealtime';
 import { useAsync } from '@/hooks/useAsync';
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import {
@@ -43,14 +44,19 @@ const DAYS_SHOWN = 7;
  * built from it. Then it takes two yeses, like everything else in this app.
  */
 export default function MeetupScreen() {
-  const { connectionId } = useLocalSearchParams<{ connectionId: string }>();
+  const { connectionId, meetup } = useLocalSearchParams<{ connectionId: string; meetup?: string }>();
+  const activeId = useRef<{ connection: string; id: string } | null>(null);
+  const acting = useRef(false);
   const router = useRouter();
 
   // open_meetup resumes any plan already in flight, so this is safe to re-run.
   const state = useAsync(async () => {
-    const { meetup_id } = await openMeetup(connectionId);
-    return fetchMeetup(meetup_id);
-  }, [connectionId]);
+    let id = meetup ?? (activeId.current?.connection === connectionId ? activeId.current.id : undefined);
+    if (!id) id = (await openMeetup(connectionId)).meetup_id;
+    activeId.current = { connection: connectionId, id };
+    return fetchMeetup(id);
+  }, [connectionId, meetup]);
+  useVenueTablesRealtime(null, () => { if (!acting.current) void state.reload(); });
 
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -68,18 +74,28 @@ export default function MeetupScreen() {
   );
 
   const act = async (name: string, fn: () => Promise<unknown>) => {
+    if (acting.current) return;
+    acting.current = true;
     setBusy(name);
     setActionError(null);
     try {
       await fn();
       setPicked(null);
-      await state.reload();
+      if (name !== 'restart') await state.reload();
     } catch (e) {
       setActionError(errorMessage(e));
     } finally {
+      acting.current = false;
       setBusy(null);
     }
   };
+
+  const restart = () => act('restart', async () => {
+    const { meetup_id } = await openMeetup(connectionId);
+    activeId.current = { connection: connectionId, id: meetup_id };
+    setEditing(false);
+    router.replace(`/meetup/${connectionId}?meetup=${meetup_id}`);
+  });
 
   if (state.loading && !view) {
     return <Screen><Loading label="Opening the plan" /></Screen>;
@@ -99,10 +115,10 @@ export default function MeetupScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: `Plan with ${name}` }} />
+      <Stack.Screen options={{ title: '' }} />
 
       <View className="gap-1">
-        <Title>Plan the next one</Title>
+        <Title>{view.status === 'confirmed' ? `Your plan with ${name}` : `Plan with ${name}`}</Title>
         <Body>
           Tick whatever works for you. {name} does the same, and we only ever show the times you
           both picked.
@@ -114,7 +130,9 @@ export default function MeetupScreen() {
       {actionError ? <ErrorNote error={actionError} /> : null}
 
       {view.status === 'confirmed' && view.plan ? (
-        <ConfirmedCard plan={view.plan} name={name} />
+        <View className="gap-3"><ConfirmedCard plan={view.plan} name={name} />
+          <Button label="Plan another" variant="secondary" busy={busy === 'restart'} onPress={() => void restart()} />
+        </View>
       ) : null}
 
       {view.status === 'proposed' && view.plan ? (
@@ -136,7 +154,7 @@ export default function MeetupScreen() {
           <Button
             label="Start a new plan"
             busy={busy === 'restart'}
-            onPress={() => void act('restart', () => openMeetup(connectionId))}
+            onPress={() => void restart()}
           />
         </Card>
       ) : null}
@@ -288,15 +306,7 @@ function SlotChip({
   selected: boolean;
   onPress: () => void;
 }) {
-  const tone = weatherTone(weather);
-  const edge = selected
-    ? 'bg-clay border-clay'
-    : {
-        neutral: 'bg-surface border-border-warm',
-        open: 'bg-sage-soft border-sage-soft',
-        filling: 'bg-amber-soft border-amber-soft',
-        full: 'bg-brick-soft border-brick-soft',
-      }[tone];
+  const edge = selected ? 'bg-clay border-clay' : 'bg-surface border-border-warm';
 
   const short = weatherShort(weather);
   return (
@@ -434,7 +444,7 @@ function PlanBody({ plan }: { plan: MeetupPlan }) {
   return (
     <View className="gap-3">
       <View className="gap-1">
-        <Caption className="font-semibold uppercase">{plan.when}</Caption>
+        <Caption className="font-semibold">{plan.when}</Caption>
         <SectionTitle>{plan.idea.title}</SectionTitle>
         <Body>{plan.idea.blurb}</Body>
       </View>

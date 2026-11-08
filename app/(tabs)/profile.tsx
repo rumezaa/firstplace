@@ -59,6 +59,8 @@ export default function ProfileScreen() {
   const venues = useAsync(fetchVenues, []);
 
   const [name, setName] = useState<string | null>(null);
+  const [nameSaved, setNameSaved] = useState(false);
+  const [kioskVenueId, setKioskVenueId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!profile) {
@@ -69,12 +71,25 @@ export default function ProfileScreen() {
     );
   }
 
-  async function save(patch: Parameters<typeof updateProfile>[0]) {
+  async function save(patch: Parameters<typeof updateProfile>[0]): Promise<boolean> {
     setError(null);
     try {
       await updateProfile(patch);
+      return true;
     } catch (e) {
       setError(errorMessage(e));
+      return false;
+    }
+  }
+
+  // Blur fires on web and when switching tabs; onEndEditing alone does not.
+  async function saveName() {
+    const next = name?.trim();
+    if (name === null || !next || next === profile?.name) return;
+    if (await save({ name: next })) {
+      setName(null);
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 2000);
     }
   }
 
@@ -106,15 +121,16 @@ export default function ProfileScreen() {
         <TextInput
           value={nameValue}
           onChangeText={setName}
-          onEndEditing={() => {
-            if (name !== null && name !== profile.name) void save({ name: name.trim() });
-          }}
+          onBlur={() => void saveName()}
+          onSubmitEditing={() => void saveName()}
+          returnKeyType="done"
           placeholder="Your name"
           placeholderTextColor="#A1897A"
           accessibilityLabel="Your name"
           className="bg-cream border-border-warm text-espresso rounded-tile border px-4 py-3 text-base"
           style={{ minHeight: 48 }}
         />
+        {nameSaved ? <Caption className="text-sage">Saved</Caption> : null}
       </Card>
 
       <Card className="gap-3">
@@ -126,7 +142,7 @@ export default function ProfileScreen() {
               key={interest}
               label={interest}
               selected={profile.interests.includes(interest)}
-              onPress={() => void save({ interests: toggleIn(profile.interests, interest) })}
+              onPress={() => void save((p) => ({ interests: toggleIn(p.interests, interest) }))}
             />
           ))}
         </View>
@@ -144,7 +160,7 @@ export default function ProfileScreen() {
               key={tag}
               label={tag}
               selected={profile.vibe_tags.includes(tag)}
-              onPress={() => void save({ vibe_tags: toggleIn(profile.vibe_tags, tag) })}
+              onPress={() => void save((p) => ({ vibe_tags: toggleIn(p.vibe_tags, tag) }))}
             />
           ))}
         </View>
@@ -181,7 +197,7 @@ export default function ProfileScreen() {
         {history.data && history.data.length === 0 ? (
           <EmptyState
             title="No visits yet"
-            body="Scan a kiosk code at a cafe and it will show up here."
+            body="Claim a table at a cafe and your visit will show up here."
           />
         ) : null}
         <View className="gap-3">
@@ -212,19 +228,23 @@ export default function ProfileScreen() {
           For cafe staff. Turns a tablet into the {APP_NAME} kiosk: a rotating QR code and a table
           grid you can tap to mark tables open or taken.
         </Caption>
+        <View className="flex-row flex-wrap gap-2">
+        {(venues.data ?? []).map((v) => (
+          <Chip
+            key={v.id}
+            label={v.name}
+            selected={kioskVenueId === v.id}
+            onPress={() => setKioskVenueId(v.id)}
+          />
+        ))}
+        </View>
         <Button
           label="Open kiosk mode"
           variant="quiet"
-          onPress={() => {
-            const first = venues.data?.[0];
-            if (first) router.push(`/kiosk/${first.id}`);
-          }}
-          disabled={!venues.data?.length}
+          onPress={() => kioskVenueId && router.push(`/kiosk/${kioskVenueId}`)}
+          disabled={!kioskVenueId}
         />
-        <Caption>
-          Opens the first venue in the list. TODO(kiosk): let staff pick which venue, or remember
-          the one this tablet belongs to.
-        </Caption>
+        <Caption>Pick the venue this tablet belongs to first.</Caption>
       </Card>
 
       <Button label="Sign out" variant="danger" onPress={() => void signOut()} />

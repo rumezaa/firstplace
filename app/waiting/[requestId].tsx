@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { fetchRequestStatus } from '@/lib/conversations';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
-import { Body, Button, Card, Loading, Screen, SectionTitle, Title } from '@/components/ui';
+import { Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
  * After "Request to chat". The answer is one of: pending, accepted, or "not
@@ -22,6 +22,8 @@ export default function Waiting() {
     if (status.data?.status === 'accepted') router.replace('/conversation');
   }, [status.data, router]);
 
+  const leave = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
   return (
     <Screen>
       <Stack.Screen options={{ title: 'Request sent' }} />
@@ -36,11 +38,17 @@ export default function Waiting() {
       ) : (
         <>
           <Title>Request sent</Title>
+          {/* Polling keeps retrying, so a dropped connection recovers on its own. */}
+          {status.error && !status.data ? <ErrorNote error={status.error} onRetry={reload} /> : null}
           <Card className="gap-3">
             <SectionTitle>Waiting for a yes</SectionTitle>
             <Body>Stay where you are. If they accept, you&apos;ll be told to come over.</Body>
             <Loading label="Usually under 2 minutes" />
           </Card>
+          <Button label="Stop waiting" variant="quiet" onPress={leave} />
+          <Caption className="text-center">
+            Your request expires on its own if they don&apos;t answer.
+          </Caption>
         </>
       )}
     </Screen>

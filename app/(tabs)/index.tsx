@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -65,8 +65,14 @@ export default function MapScreen() {
       <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
 
       {/* Header + filter chips float over the map so the map stays full-bleed. */}
-      <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0" pointerEvents="box-none">
-        <View className="px-5 pb-2 pt-1" pointerEvents="none">
+      {/* A solid backdrop keeps the header readable over busy map tiles. The
+          right padding leaves room for the global Help button. */}
+      <SafeAreaView
+        edges={['top']}
+        className="bg-cream border-border-warm absolute left-0 right-0 top-0 border-b"
+        pointerEvents="box-none"
+      >
+        <View className="pb-2 pl-5 pr-28 pt-1" pointerEvents="none">
           <Text className="text-espresso text-2xl font-bold" accessibilityRole="header">
             {APP_NAME}
           </Text>
@@ -188,13 +194,6 @@ function VenuePreviewSheet({
           <Text className="text-base font-semibold text-white">See inside</Text>
         </Pressable>
 
-        <Link
-          href={`/kiosk/${venue.id}`}
-          className="text-mocha mt-3 text-center text-xs"
-          accessibilityLabel={`Open kiosk mode for ${venue.name}`}
-        >
-          Staff? Open kiosk mode
-        </Link>
       </SafeAreaView>
     </View>
   );

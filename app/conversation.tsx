@@ -155,12 +155,16 @@ function Live({
 
 function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation; onVoted: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function vote(v: 'good' | 'not_for_me') {
     setBusy(v);
+    setError(null);
     try {
       await voteConversation(c.id, v);
       onVoted();
+    } catch (e) {
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -196,6 +200,7 @@ function Vote({ conversation: c, onVoted, onDone }: { conversation: Conversation
     <>
       <Title>How was it?</Title>
       <Body>Only you see your answer. Nobody is told how anyone voted.</Body>
+      {error ? <ErrorNote error={error} /> : null}
       <Button label="Good conversation" busy={busy === 'good'} onPress={() => void vote('good')} />
       <Button label="Not for me" variant="quiet" busy={busy === 'not_for_me'} onPress={() => void vote('not_for_me')} />
     </>

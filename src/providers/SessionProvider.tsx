@@ -28,7 +28,8 @@ interface SessionContextValue {
   signOut: () => Promise<void>;
 
   refreshProfile: () => Promise<void>;
-  updateProfile: (patch: UserProfileUpdate) => Promise<void>;
+  /** Pass a function to build on the latest profile (e.g. toggling a chip). */
+  updateProfile: (patch: UserProfileUpdate | ((current: UserProfile) => UserProfileUpdate)) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -144,15 +145,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     void Promise.resolve().then(refreshProfile);
   }, [refreshProfile]);
 
+  // The newest profile, including optimistic edits not yet rendered. Lets a
+  // second quick tap build on the first instead of on a stale render.
+  const profileRef = useRef<UserProfile | null>(null);
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+  const saveSeq = useRef(0);
+
   const updateProfile = useCallback(
-    async (patch: UserProfileUpdate) => {
+    async (patch: UserProfileUpdate | ((current: UserProfile) => UserProfileUpdate)) => {
       if (!session) throw new Error('Not signed in.');
+      const current = profileRef.current;
+      const resolved = typeof patch === 'function' ? (current ? patch(current) : {}) : patch;
       // Optimistic: these are toggles and chips, they should feel instant.
-      setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
+      if (current) {
+        profileRef.current = { ...current, ...resolved };
+        setProfile(profileRef.current);
+      }
+      const seq = ++saveSeq.current;
       try {
-        setProfile(await api.patch<UserProfile>('/me', patch));
+        const saved = await api.patch<UserProfile>('/me', resolved);
+        // An older save finishing late must not undo a newer tap.
+        if (seq === saveSeq.current) setProfile(saved);
       } catch (e) {
-        await refreshProfile(); // put the real value back
+        if (seq === saveSeq.current) await refreshProfile(); // put the real value back
         throw e;
       }
     },

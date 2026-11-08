@@ -9,7 +9,7 @@ import { fetchConversation, parseBoxCode } from '@/lib/conversations';
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import { fetchTables, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
-import { Body, Button, Caption, Card, Loading, Screen, SectionTitle, Title } from '@/components/ui';
+import { Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
  * Tap or scan a First Place box. The box's NFC tag and printed QR both hold a
@@ -120,12 +120,21 @@ function PickByHand({ onTable }: { onTable: (id: string) => void }) {
       <SectionTitle>No camera? Pick the box</SectionTitle>
       <Caption>Staff can also help you claim a table.</Caption>
       {!venueId ? (
-        (venues.data ?? []).map((v) => (
-          <Row key={v.id} label={v.name} onPress={() => setVenueId(v.id)} />
-        ))
+        <>
+          {venues.error ? <ErrorNote error={venues.error} onRetry={() => void venues.reload()} /> : null}
+          {venues.loading && !venues.data ? <Loading label="Loading places" /> : null}
+          {(venues.data ?? []).map((v) => (
+            <Row key={v.id} label={v.name} onPress={() => setVenueId(v.id)} />
+          ))}
+        </>
       ) : (
         <>
-          {(tables.data ?? []).map((t) => (
+          {tables.error ? <ErrorNote error={tables.error} onRetry={() => void tables.reload()} /> : null}
+          {tables.loading ? <Loading label="Loading tables" /> : null}
+          {!tables.loading && !tables.error && tables.data?.length === 0 ? (
+            <Caption>This place has no tables set up yet.</Caption>
+          ) : null}
+          {(tables.loading ? [] : tables.data ?? []).map((t) => (
             <Row
               key={t.id}
               label={`${t.label}${t.is_chat_table ? ' · conversation box' : ''}`}

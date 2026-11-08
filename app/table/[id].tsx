@@ -1,6 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+
+import { MIN_TAP_TARGET } from '@/lib/theme';
 
 import { errorMessage } from '@/lib/api';
 import {
@@ -20,7 +22,7 @@ import {
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
 import { LightPole } from '@/components/LightPole';
-import { Badge, Body, Button, Caption, Card, Chip, ErrorNote, Loading, Screen, SectionTitle, Title } from '@/components/ui';
+import { Badge, Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
  * What you see after tapping a box. Three cases:
@@ -141,15 +143,31 @@ export default function TableScreen() {
 
 function LightPicker({ value, onPick, busy }: { value: Light; onPick: (l: Light) => void; busy: string | null }) {
   return (
-    <View className="gap-2">
-      {(['green', 'yellow', 'red'] as Light[]).map((l) => (
-        <Chip
-          key={l}
-          label={`${LIGHT_INFO[l].symbol}  ${LIGHT_INFO[l].label}: ${LIGHT_INFO[l].meaning}`}
-          selected={value === l}
-          onPress={busy ? undefined : () => onPick(l)}
-        />
-      ))}
+    <View className="gap-2" accessibilityRole="radiogroup">
+      {(['green', 'yellow', 'red'] as Light[]).map((l) => {
+        const selected = value === l;
+        return (
+          <Pressable
+            key={l}
+            onPress={() => onPick(l)}
+            disabled={Boolean(busy)}
+            accessibilityRole="radio"
+            accessibilityLabel={`${LIGHT_INFO[l].label}: ${LIGHT_INFO[l].meaning}`}
+            accessibilityState={{ selected, disabled: Boolean(busy) }}
+            style={{ minHeight: MIN_TAP_TARGET }}
+            className={`rounded-tile flex-row items-center gap-3 border-2 px-4 py-3 active:opacity-80 ${
+              selected ? 'bg-clay-soft border-clay' : 'bg-surface border-border-warm'
+            } ${busy ? 'opacity-50' : ''}`}
+          >
+            <Text className="text-espresso w-5 text-center text-lg font-bold">{LIGHT_INFO[l].symbol}</Text>
+            <View className="flex-1">
+              <Text className="text-espresso text-base font-semibold">{LIGHT_INFO[l].label}</Text>
+              <Caption>{LIGHT_INFO[l].meaning}</Caption>
+            </View>
+            {selected ? <Text className="text-clay text-sm font-semibold">Selected</Text> : null}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -204,16 +222,20 @@ function IncomingRequests({ onAccepted }: { onAccepted: () => void }) {
   const reload = useCallback(() => void requests.reload(), [requests]);
   useVenueTablesRealtime(null, reload);
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const cards = requests.data ?? [];
   if (cards.length === 0) return null;
 
   async function respond(card: RequestCard, accept: boolean, minutes = 30) {
     setBusy(`${card.id}-${accept ? minutes : 'no'}`);
+    setError(null);
     try {
       const r = await respondToRequest(card.id, accept, minutes);
       if (r.accepted) onAccepted();
       else await requests.reload();
+    } catch (e) {
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -221,6 +243,7 @@ function IncomingRequests({ onAccepted }: { onAccepted: () => void }) {
 
   return (
     <>
+      {error ? <ErrorNote error={error} /> : null}
       {cards.map((card) => {
         const common = [...card.shared.interests, ...card.shared.topics].slice(0, 3);
         return (

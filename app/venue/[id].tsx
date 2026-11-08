@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { RefreshControl, View } from 'react-native';
 
@@ -17,6 +17,7 @@ import { ChatTableNote, TableGrid, TableGridLegend } from '@/components/TableGri
 import {
   Badge,
   Body,
+  Button,
   Caption,
   Card,
   ErrorNote,
@@ -30,6 +31,7 @@ import {
 export default function VenueScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const venueId = String(id);
+  const router = useRouter();
 
   const venue = useAsync(() => fetchVenue(venueId), [venueId]);
   const live = useAsync(() => fetchVenueLiveOne(venueId), [venueId]);
@@ -183,21 +185,18 @@ export default function VenueScreen() {
       <Card className="gap-3">
         <SectionTitle>Going in?</SectionTitle>
         <Body>
-          Scan the QR code at the counter to claim a table. Pick the chat table if you would like
-          company.
+          Tap your phone on a table&apos;s box, or scan the code on its side, to claim it. Pick the
+          chat table if you would like company.
         </Body>
-        <Link href="/checkin" className="text-clay text-base font-semibold">
-          Open the scanner
-        </Link>
+        <Button label="Find a table" onPress={() => router.push('/checkin')} />
       </Card>
 
-      <Link
-        href={`/dashboard/${v.id}`}
-        className="text-mocha pt-2 text-center text-xs"
-        accessibilityLabel={`Owner dashboard for ${v.name}`}
-      >
-        Cafe owner? See the anonymous dashboard
-      </Link>
+      <Button
+        label="Cafe owner? See the anonymous dashboard"
+        variant="quiet"
+        accessibilityHint={`Opens the owner dashboard for ${v.name}`}
+        onPress={() => router.push(`/dashboard/${v.id}`)}
+      />
     </Screen>
   );
 }

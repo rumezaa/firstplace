@@ -7,7 +7,7 @@ import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 import { LIGHT_INFO, fetchFloor, type BoxLight, type FloorTable } from '@/lib/conversations';
 import { FLOOR_LAYOUTS, type FloorLayout, type FloorPlan } from '@/lib/floorLayouts';
 import { errorMessage } from '@/lib/api';
-import { enterVenue, fetchRoom, fetchVenue, roomSummary } from '@/lib/venues';
+import { enterVenue, fetchRoom, fetchVenue, roomSummary, sharedLine } from '@/lib/venues';
 import { colors } from '@/lib/theme';
 import { useAsync } from '@/hooks/useAsync';
 import { useSession } from '@/providers/SessionProvider';
@@ -19,7 +19,9 @@ import { Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, 
  * the whole floor at a glance, every table's live light, and the room in
  * counts. Arriving from the tag checks you in to the venue (no profile goes
  * over NFC; your login says who you are). Pick a table; from there it's the
- * usual table flow. Colours and counts only, never who is sitting where.
+ * usual table flow. Colours and counts only, never who is sitting where. The
+ * one exception is by consent: tables on green show what you have in common
+ * with the person there (once you're checked in), still without a name.
  */
 const DOT: Record<BoxLight, string> = { green: colors.go, yellow: colors.ask, red: colors.stop, off: '#B9BCB8' };
 const CHIP: Record<BoxLight, string> = { green: 'Say hi', yellow: 'Ask first', red: 'Not now', off: 'Just a table' };
@@ -80,6 +82,8 @@ export default function FloorScreen() {
       .filter(Boolean)
       .join(' · ') || 'No open lights right now';
 
+  const shared: Record<string, string[]> = {};
+  for (const g of room.data?.green ?? []) shared[g.table_id] = g.interests;
   const selected = tables.find((t) => t.id === selectedId) ?? null;
   const open = (t: FloorTable) => router.push(`/table/${t.id}`);
 
@@ -127,7 +131,7 @@ export default function FloorScreen() {
         <FloorMap layout={layout} tables={tables} selectedId={selectedId} onSelect={(t) => setSelectedId(t.id)} />
       ) : null}
 
-      {selected ? <TableSheet table={selected} onOpen={() => open(selected)} /> : null}
+      {selected ? <TableSheet table={selected} shared={shared[selected.id]} onOpen={() => open(selected)} /> : null}
 
       {tables.length ? <SectionTitle>Tables on this floor</SectionTitle> : null}
       {loaded && tables.length === 0 ? <Body>No FirstPlace tables on this floor yet.</Body> : null}
@@ -136,7 +140,7 @@ export default function FloorScreen() {
           key={t.id}
           onPress={() => open(t)}
           accessibilityRole="button"
-          accessibilityLabel={`${t.label}${t.mine ? ', your table' : ''}. ${LIGHT_INFO[t.light].label}: ${LIGHT_INFO[t.light].meaning}`}
+          accessibilityLabel={`${t.label}${t.mine ? ', your table' : ''}. ${LIGHT_INFO[t.light].label}: ${LIGHT_INFO[t.light].meaning}${shared[t.id] ? `. ${sharedLine(shared[t.id])}` : ''}`}
           style={{ minHeight: 44 }}
         >
           <Card className="flex-row items-center gap-3">
@@ -149,6 +153,7 @@ export default function FloorScreen() {
               <Caption>
                 {LIGHT_INFO[t.light].label}: {LIGHT_INFO[t.light].meaning}
               </Caption>
+              {shared[t.id] ? <Caption>{sharedLine(shared[t.id])}</Caption> : null}
             </View>
           </Card>
         </Pressable>
@@ -380,7 +385,7 @@ function TableMarker({ table, x, y, selected, onPress }: { table: FloorTable; x:
   );
 }
 
-function TableSheet({ table, onOpen }: { table: FloorTable; onOpen: () => void }) {
+function TableSheet({ table, shared, onOpen }: { table: FloorTable; shared?: string[]; onOpen: () => void }) {
   const action = table.mine
     ? 'Open my table'
     : table.light === 'green'
@@ -397,6 +402,7 @@ function TableSheet({ table, onOpen }: { table: FloorTable; onOpen: () => void }
         <SectionTitle>{table.label}</SectionTitle>
       </View>
       <Body>{table.mine ? 'This is your table.' : `${LIGHT_INFO[table.light].meaning}.`}</Body>
+      {shared?.length ? <Body>{sharedLine(shared)}</Body> : null}
       {action ? <Button label={action} onPress={onOpen} /> : <Caption>They&apos;d rather not be disturbed right now.</Caption>}
     </Card>
   );

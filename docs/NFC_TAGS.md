@@ -7,9 +7,11 @@ Every sticker and printed QR holds a link to the **API server**, not to the app:
 | Table box | `<base>/t/<tableId>` | `<APP_LINK_BASE>table/<tableId>` |
 | Venue entrance | `<base>/v/<venueId>` | `<APP_LINK_BASE>floor/<venueId>?here=1` |
 
+The server answers with a tiny page that jumps into the app and shows a big **Open in app** button (Android sometimes blocks the automatic jump). No login, no database call. Code: `server/src/tagLinks.ts`.
+
 **Entrance tag = check-in.** `?here=1` makes the floor screen call `POST /venues/<id>/enter`: you're checked in to the venue with no table (a table you already hold there is kept). Nothing goes over NFC; the login says who you are. The screen then shows the room in counts only (`GET /venues/<id>/room`, `db/migrations/170_venue_presence.sql`): "12 people here · 4 open to talk · 3 into hiking like you". The interest line needs two or more people, respects "Show what we have in common" and blocks, and never says who. Incognito people aren't counted. Opening the floor from inside the app shows an **I'm here** button instead.
 
-The server answers with a tiny page that jumps into the app and shows a big **Open in app** button (Android sometimes blocks the automatic jump). No login, no database call. Code: `server/src/tagLinks.ts`.
+**Green tables, by consent.** Once you're checked in, tables on green (the person asked for company) also show what you share with them: "You both like hiking and board games." No name or profile; first names stay hidden until you're chatting. Yellow, red and people not at a table show nothing beyond the counts. Never your own table, never between blocked people, and nothing when either side has "Show what we have in common" off (`db/migrations/180_room_green_shared.sql`).
 
 **Change `APP_LINK_BASE` in `server/.env`, never the stickers:**
 

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { errorMessage } from '@/lib/api';
@@ -39,11 +39,14 @@ export default function TableScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const signedIn = useIsSignedIn();
+  const acting = useRef(false);
 
   const reload = useCallback(() => void view.reload(), [view]);
   useVenueTablesRealtime(id, reload);
 
   async function run(key: string, fn: () => Promise<unknown>) {
+    if (acting.current) return;
+    acting.current = true;
     setBusy(key);
     setError(null);
     try {
@@ -52,11 +55,12 @@ export default function TableScreen() {
     } catch (e) {
       setError(errorMessage(e));
     } finally {
+      acting.current = false;
       setBusy(null);
     }
   }
 
-  if (!view.data) {
+  if (!view.data || view.error) {
     return (
       <Screen>
         {view.error ? <ErrorNote error={view.error} onRetry={reload} /> : <Loading label="Reading the box" />}
@@ -286,19 +290,29 @@ function IncomingRequests({ onAccepted }: { onAccepted: () => void }) {
   useVenueTablesRealtime(null, reload);
   const [busy, setBusy] = useState<string | null>(null);
   const [minutes, setMinutes] = useState(30);
+  const acting = useRef(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cards = requests.data ?? [];
+  if (error || requests.error) return <ErrorNote error={error ?? requests.error!} onRetry={() => { setError(null); reload(); }} />;
+  if (requests.loading && !requests.data) return <Loading label="Checking requests" />;
   if (cards.length === 0) {
-    return <Body className="px-1">No requests yet. Your phone will buzz when someone asks.</Body>;
+    return <Body className="px-1">No requests yet. Keep this screen open to see new requests.</Body>;
   }
 
   async function respond(card: RequestCard, accept: boolean) {
+    if (acting.current) return;
+    acting.current = true;
+    setError(null);
     setBusy(`${card.id}-${accept}`);
     try {
       const r = await respondToRequest(card.id, accept, minutes);
       if (r.accepted) onAccepted();
       else await requests.reload();
+    } catch (e) {
+      setError(errorMessage(e));
     } finally {
+      acting.current = false;
       setBusy(null);
     }
   }

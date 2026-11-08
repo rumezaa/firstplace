@@ -103,11 +103,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const profileGeneration = useRef(0);
 
   const applySession = useCallback(async (next: Session | null) => {
     setAccessToken(next?.token ?? null);
     setSession(next);
-    if (!next) setProfile(null);
+    profileGeneration.current++;
+    setProfile(null);
     try {
       if (next) await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       else await AsyncStorage.removeItem(STORAGE_KEY);
@@ -146,11 +148,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // ---------------------------------------------------------------- profile --
   const refreshProfile = useCallback(async () => {
     if (!session) return; // signing out clears the profile in applySession
+    const generation = profileGeneration.current;
     try {
       const me = await api.get<UserProfile>('/me');
+      if (generation !== profileGeneration.current) return;
       // First Auth0 login: the server created a blank profile. Fill in the name.
       if (me && !me.name && session.user.name) {
-        setProfile(await api.patch<UserProfile>('/me', { name: session.user.name }));
+        const updated = await api.patch<UserProfile>('/me', { name: session.user.name });
+        if (generation === profileGeneration.current) setProfile(updated);
         return;
       }
       setProfile(me);

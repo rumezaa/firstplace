@@ -116,6 +116,7 @@ export function errorHint(error: unknown): string | null {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   if (!API_URL) throw new ApiError(apiConfigProblem ?? 'API not configured.', 0);
 
+  const requestToken = accessToken;
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -123,7 +124,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       headers: {
         Accept: 'application/json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...(requestToken ? { Authorization: `Bearer ${requestToken}` } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -140,7 +141,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const data = text ? safeJson(text) : null;
 
   if (!res.ok) {
-    if (res.status === 401 && accessToken) onUnauthorized?.();
+    if (res.status === 401 && requestToken && requestToken === accessToken) onUnauthorized?.();
     const err = (data ?? {}) as { error?: string; hint?: string | null };
     throw new ApiError(err.error ?? `Request failed (${res.status}).`, res.status, err.hint ?? null);
   }

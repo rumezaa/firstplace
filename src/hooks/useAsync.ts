@@ -22,33 +22,44 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[] = []): Asy
   const [loading, setLoading] = useState(true);
 
   const mounted = useRef(true);
+  const generation = useRef(0);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      // Invalidate requests, not a DOM ref.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      generation.current++;
     };
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Custom loader hook intentionally accepts a caller-owned dependency list.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   const run = useCallback(loader, deps);
 
   const reload = useCallback(async () => {
+    const request = ++generation.current;
     setLoading(true);
     try {
       const next = await run();
-      if (mounted.current) {
+      if (mounted.current && request === generation.current) {
         setData(next);
         setError(null);
       }
     } catch (e) {
-      if (mounted.current) setError(e instanceof Error ? e : new Error(String(e)));
+      if (mounted.current && request === generation.current) setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
-      if (mounted.current) setLoading(false);
+      if (mounted.current && request === generation.current) setLoading(false);
     }
   }, [run]);
 
   useEffect(() => {
-    void reload();
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) { setData(null); void reload(); }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { cancelled = true; generation.current++; };
   }, [reload]);
 
   return { data, error, loading, reload };

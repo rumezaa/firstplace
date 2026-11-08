@@ -1,6 +1,6 @@
 import '../global.css';
 
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,7 +23,8 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { initializing } = useSession();
+  const { initializing, session } = useSession();
+  const segments = useSegments();
 
   // A fresh clone with no .env would otherwise show a stack of network errors.
   if (!isApiConfigured) return <ApiNotConfigured problem={apiConfigProblem} />;
@@ -36,8 +37,11 @@ function RootNavigator() {
     );
   }
 
+  const protectedRoutes = ['meetup', 'dashboard', 'waiting', 'conversation', 'rewards'];
+  if (!session && protectedRoutes.includes(segments[0] ?? '')) return <Redirect href="/sign-in" />;
+
   return (
-    <View style={{ flex: 1 }}>
+    <View key={session?.token ?? 'guest'} style={{ flex: 1 }}>
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.cream },

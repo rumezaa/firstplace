@@ -39,6 +39,7 @@ export default function ConversationScreen() {
   const [reporting, setReporting] = useState(false);
 
   if (conv.loading && !conv.data) return <Screen><Loading label="Joining the conversation" /></Screen>;
+  if (conv.error) return <Screen><ErrorNote error={conv.error} onRetry={reload} /></Screen>;
   if (!conv.data) {
     return (
       <Screen>

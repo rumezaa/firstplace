@@ -478,6 +478,8 @@ begin
   return jsonb_build_object('recorded', true);
 end $$;
 
+-- 090 adds a socials column; drop first so re-running the migrations works.
+drop function if exists public.my_connections();
 create or replace function public.my_connections()
 returns table (id uuid, first_name text, shared jsonb, created_at timestamptz, venue_name text)
 language sql stable security definer set search_path = public, app_private as $$

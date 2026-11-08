@@ -32,6 +32,8 @@ export type Database = {
           vibe_tags: string[];
           incognito: boolean;
           familiar_faces_opt_in: boolean;
+          /** Private. Shown to someone only after you both agree to swap. */
+          socials?: Record<string, string>;
           created_at: string;
         };
         Insert: {
@@ -50,6 +52,7 @@ export type Database = {
           vibe_tags?: string[];
           incognito?: boolean;
           familiar_faces_opt_in?: boolean;
+          socials?: Record<string, string>;
         };
         Relationships: [];
       };

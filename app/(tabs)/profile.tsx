@@ -117,6 +117,8 @@ export default function ProfileScreen() {
         />
       </Card>
 
+      <SocialsCard socials={profile.socials ?? {}} onSave={(socials) => void save({ socials })} />
+
       <Card className="gap-3">
         <SectionTitle>Interests</SectionTitle>
         <Caption>Used to suggest places, never shown next to your name.</Caption>
@@ -229,5 +231,42 @@ export default function ProfileScreen() {
 
       <Button label="Sign out" variant="danger" onPress={() => void signOut()} />
     </Screen>
+  );
+}
+
+const SOCIAL_FIELDS = [
+  { key: 'instagram', label: 'Instagram', placeholder: '@you' },
+  { key: 'discord', label: 'Discord', placeholder: 'username' },
+  { key: 'snapchat', label: 'Snapchat', placeholder: 'username' },
+  { key: 'linkedin', label: 'LinkedIn', placeholder: 'linkedin.com/in/you' },
+] as const;
+
+/** Private until you and someone else both agree to swap after a conversation. */
+function SocialsCard({ socials, onSave }: { socials: Record<string, string>; onSave: (s: Record<string, string>) => void }) {
+  const [draft, setDraft] = useState<Record<string, string>>(socials);
+  return (
+    <Card className="gap-3">
+      <SectionTitle>Socials</SectionTitle>
+      <Caption>
+        Private. Someone only sees these after a conversation where you both agreed to swap socials.
+      </Caption>
+      {SOCIAL_FIELDS.map((f) => (
+        <TextInput
+          key={f.key}
+          value={draft[f.key] ?? ''}
+          onChangeText={(v) => setDraft((d) => ({ ...d, [f.key]: v }))}
+          onEndEditing={() => {
+            if ((draft[f.key] ?? '') !== (socials[f.key] ?? '')) onSave({ ...socials, [f.key]: (draft[f.key] ?? '').trim() });
+          }}
+          placeholder={`${f.label}: ${f.placeholder}`}
+          placeholderTextColor="#A1897A"
+          autoCapitalize="none"
+          autoCorrect={false}
+          accessibilityLabel={f.label}
+          className="bg-cream border-border-warm text-espresso rounded-tile border px-4 py-3 text-base"
+          style={{ minHeight: 48 }}
+        />
+      ))}
+    </Card>
   );
 }

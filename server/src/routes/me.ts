@@ -11,8 +11,25 @@ me.use('*', requireAuth);
 
 const PROFILE_FIELDS = [
   'name', 'interests', 'vibe_tags', 'incognito', 'familiar_faces_opt_in',
-  'languages', 'topics', 'comm_pref', 'share_comm_pref', 'age_range',
+  'languages', 'topics', 'comm_pref', 'share_comm_pref', 'age_range', 'socials',
 ] as const;
+
+// Socials stay private until both people agree to swap (my_contacts()).
+const SOCIAL_KEYS = ['instagram', 'discord', 'snapchat', 'tiktok', 'linkedin', 'x', 'phone', 'email', 'other'];
+
+function cleanSocials(v: unknown): Record<string, string> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) {
+    throw new HTTPException(400, { message: 'socials must be an object like {"instagram": "@you"}.' });
+  }
+  const out: Record<string, string> = {};
+  for (const [k, raw] of Object.entries(v)) {
+    if (!SOCIAL_KEYS.includes(k)) throw new HTTPException(400, { message: `Unknown social "${k}". Use: ${SOCIAL_KEYS.join(', ')}.` });
+    if (raw === null || raw === '') continue; // clearing one
+    if (typeof raw !== 'string' || raw.length > 100) throw new HTTPException(400, { message: `${k} must be text, up to 100 characters.` });
+    out[k] = raw.trim();
+  }
+  return out;
+}
 
 me.get('/', async (c) => {
   const row = await asUser(c.get('userId'), (db) =>
@@ -27,7 +44,7 @@ me.patch('/', async (c) => {
   const values: unknown[] = [];
   for (const field of PROFILE_FIELDS) {
     if (field in body) {
-      values.push(body[field]);
+      values.push(field === 'socials' ? JSON.stringify(cleanSocials(body.socials)) : body[field]);
       sets.push(`${field} = $${values.length}`);
     }
   }

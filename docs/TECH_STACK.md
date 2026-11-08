@@ -93,6 +93,15 @@ If the server forgets a filter, the database still refuses.
 
 **Guard rails** (`server/src/gemini.ts`, set in `.env`): per user (or per IP when signed out) 6 calls a minute and 60 a day; 30 a minute and 4 at once for the whole server; 8s per model attempt and a 15s overall deadline; SDK retries off; identical requests in flight share one call; answers cached in memory. A limit or timeout never errors: the endpoint returns fallback copy with `aiStatus` and `retryAfterSec`.
 
+## 6b. Conversations: groups and how they end (`db/migrations/090_groups_and_outcomes.sql`)
+
+- **Groups.** Any number of people per conversation (`conversation_members`). Phones refer to people by a per-conversation member id, never a user id. The box keeps the host's light while people talk: green lets more people join, yellow lets the host accept requests, red closes the group. If the host leaves while others keep talking, it shows red.
+- **Ending.** An untimed conversation ends once at least half of the people still in it tap End (one tap with two people). Anyone can leave alone; fewer than two left ends it. Timed conversations end 2 minutes after the timer (job), unless everyone extends.
+- **Full reset.** When it ends, everyone at that table is checked out, the table is freed and the box goes off. The conversation row and its `end_reason` are the chatting-history log (`GET /me/history`).
+- **Three outcomes, per pair.** *Hit it off:* both vote good, so they're connected and can swap socials and get a hangout plan. *Not a match:* nothing is shared, and whoever said good may ask once to swap socials; a decline is never shown and can't be re-asked. *Unsafe:* an anonymous report against one member flags their profile (`users.flagged_at`, `app_private.flag_queue`) for a person to review, blocks them, removes any swap or connection, and takes the reporter out.
+- Socials (`users.socials`) are private and only reach someone through an accepted swap. Nobody ever sees anyone else's vote.
+- Tests: `server/tests/group_flow_test.py` (51 checks) and `flow_test.py`.
+
 ## 7. Hardware: the chat-table light
 
 ```

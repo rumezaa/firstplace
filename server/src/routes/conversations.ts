@@ -113,17 +113,60 @@ conversations.get('/me/conversation/topics', async (c) => {
   });
 });
 
+// Tap End. It ends once at least half of the people still here have tapped
+// End (one tap with two people). Then the table fully resets.
 conversations.post('/me/conversation/end', async (c) => c.json(await rpc(c.get('userId'), 'public.end_conversation()')));
+conversations.post('/me/conversation/keep-talking', async (c) => c.json(await rpc(c.get('userId'), 'public.keep_talking()')));
+/** Leave on your own; the others carry on (it ends if only one is left). */
+conversations.post('/me/conversation/leave', async (c) => c.json(await rpc(c.get('userId'), 'public.leave_conversation()')));
 
 conversations.post('/me/conversation/extend', async (c) => {
   const { extend } = await body<{ extend?: boolean }>(c);
   return c.json(await rpc(c.get('userId'), 'public.vote_extend($1)', [Boolean(extend)]));
 });
 
+// ---------------------------------------------------------------- outcomes ---
+// Per person in the conversation, by member id (phones never see user ids).
+function vote(v: unknown): 'good' | 'not_for_me' {
+  if (v !== 'good' && v !== 'not_for_me') throw new HTTPException(400, { message: 'vote must be good or not_for_me.' });
+  return v;
+}
+
+/** Private vote. With `member`, about that person; without, about everyone. */
 conversations.post('/conversations/:id/vote', async (c) => {
-  const { vote } = await body<{ vote?: string }>(c);
-  if (vote !== 'good' && vote !== 'not_for_me') throw new HTTPException(400, { message: 'vote must be good or not_for_me.' });
-  return c.json(await rpc(c.get('userId'), 'public.vote_conversation($1, $2::public.vote)', [c.req.param('id'), vote]));
+  const b = await body<{ vote?: string; member?: string }>(c);
+  const v = vote(b.vote);
+  if (b.member) {
+    return c.json(await rpc(c.get('userId'), 'public.vote_member($1, $2, $3::public.vote)', [c.req.param('id'), b.member, v]));
+  }
+  return c.json(await rpc(c.get('userId'), 'public.vote_conversation($1, $2::public.vote)', [c.req.param('id'), v]));
+});
+
+conversations.post('/conversations/:id/members/:memberId/vote', async (c) => {
+  const v = vote((await body<{ vote?: string }>(c)).vote);
+  return c.json(await rpc(c.get('userId'), 'public.vote_member($1, $2, $3::public.vote)',
+    [c.req.param('id'), c.req.param('memberId'), v]));
+});
+
+/** Ask to swap socials (after voting good). One ask per pair, ever. */
+conversations.post('/conversations/:id/members/:memberId/swap', async (c) =>
+  c.json(await rpc(c.get('userId'), 'public.request_social_swap($1, $2)', [c.req.param('id'), c.req.param('memberId')])),
+);
+
+conversations.get('/me/swap-requests', async (c) => {
+  const rows = await asUser(c.get('userId'), (db) => db.query('select * from public.my_swap_requests()'));
+  return c.json(rows.rows);
+});
+
+conversations.post('/swaps/:id/respond', async (c) => {
+  const { accept } = await body<{ accept?: boolean }>(c);
+  return c.json(await rpc(c.get('userId'), 'public.respond_to_swap($1, $2)', [c.req.param('id'), Boolean(accept)]));
+});
+
+/** People you swapped socials with: first name and their socials. */
+conversations.get('/me/contacts', async (c) => {
+  const rows = await asUser(c.get('userId'), (db) => db.query('select * from public.my_contacts()'));
+  return c.json(rows.rows);
 });
 
 conversations.get('/me/connections', async (c) => {
@@ -131,14 +174,38 @@ conversations.get('/me/connections', async (c) => {
   return c.json(rows.rows);
 });
 
+/** Chatting history: one line per finished conversation. */
+conversations.get('/me/history', async (c) => {
+  const limit = Math.min(Number(c.req.query('limit') ?? 30) || 30, 100);
+  const rows = await asUser(c.get('userId'), (db) => db.query('select * from public.my_chat_history($1)', [limit]));
+  return c.json(rows.rows);
+});
+
 // ----------------------------------------------------------------- safety ---
 const REASONS = ['uncomfortable', 'would_not_leave', 'inappropriate', 'romantic_unwanted', 'other'];
 
-conversations.post('/conversations/:id/report', async (c) => {
+async function reportBody(c: Parameters<typeof body>[0]) {
   const { reason, note } = await body<{ reason?: string; note?: string }>(c);
   if (!reason || !REASONS.includes(reason)) throw new HTTPException(400, { message: `reason must be one of ${REASONS.join(', ')}.` });
-  return c.json(await rpc(c.get('userId'), 'public.report_user($1, $2, $3)', [c.req.param('id'), reason, note ?? null]));
+  return { reason, note: note?.slice(0, 1000) ?? null };
+}
+
+/** Anonymous report about one member: flags them, blocks them, you leave. */
+conversations.post('/conversations/:id/members/:memberId/report', async (c) => {
+  const { reason, note } = await reportBody(c);
+  return c.json(await rpc(c.get('userId'), 'public.report_member($1, $2, $3, $4)',
+    [c.req.param('id'), c.req.param('memberId'), reason, note]));
 });
+
+/** 080 form: only works when there is exactly one other person. */
+conversations.post('/conversations/:id/report', async (c) => {
+  const { reason, note } = await reportBody(c);
+  return c.json(await rpc(c.get('userId'), 'public.report_user($1, $2, $3)', [c.req.param('id'), reason, note]));
+});
+
+conversations.post('/conversations/:id/members/:memberId/block', async (c) =>
+  c.json(await rpc(c.get('userId'), 'public.block_member($1, $2)', [c.req.param('id'), c.req.param('memberId')])),
+);
 
 conversations.post('/conversations/:id/block', async (c) =>
   c.json(await rpc(c.get('userId'), 'public.block_from_conversation($1)', [c.req.param('id')])),

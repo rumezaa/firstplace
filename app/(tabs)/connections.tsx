@@ -6,7 +6,16 @@ import type { FamiliarFaceCard } from '@/lib/database.types';
 import { faceDetail, faceHeadline, faceState, fetchFamiliarFaces, respondToFamiliarFace } from '@/lib/familiarFaces';
 import { relativeDay } from '@/lib/format';
 import { errorMessage } from '@/lib/api';
-import { fetchConnections } from '@/lib/conversations';
+import {
+  SOCIAL_LABELS,
+  endReasonLabel,
+  fetchConnections,
+  fetchContacts,
+  fetchHistory,
+  fetchSwapRequests,
+  respondToSwap,
+  type Socials,
+} from '@/lib/conversations';
 import { useAsync } from '@/hooks/useAsync';
 import { useSession } from '@/providers/SessionProvider';
 import {
@@ -51,7 +60,9 @@ export default function ConnectionsScreen() {
     <Screen
       refreshControl={<RefreshControl refreshing={faces.loading} onRefresh={() => void faces.reload()} />}
     >
+      <SwapRequests />
       <MyConnections />
+      <MyContacts />
 
       <View className="gap-1">
         <Title>Familiar faces</Title>
@@ -103,6 +114,8 @@ export default function ConnectionsScreen() {
           now, and going incognito takes you out of this entirely.
         </Caption>
       </Card>
+
+      <ChatHistory />
     </Screen>
   );
 }
@@ -187,9 +200,100 @@ function MyConnections() {
             <SectionTitle>{c.first_name ?? 'A new friend'}</SectionTitle>
             {c.venue_name ? <Caption>Met at {c.venue_name} · {relativeDay(c.created_at)}</Caption> : null}
             {common.length ? <Body>You both like {common.join(', ')}.</Body> : null}
+            {c.socials ? <SocialsList socials={c.socials} /> : null}
           </Card>
         );
       })}
+    </View>
+  );
+}
+
+function SocialsList({ socials }: { socials: Socials }) {
+  const entries = Object.entries(socials).filter(([, v]) => v) as [keyof Socials, string][];
+  if (!entries.length) return <Caption>They haven&apos;t added any socials yet.</Caption>;
+  return (
+    <View className="gap-1">
+      {entries.map(([k, v]) => <Body key={k}>{SOCIAL_LABELS[k] ?? k}: {v}</Body>)}
+    </View>
+  );
+}
+
+/** Someone asked to swap socials. Declining is private: they are never told. */
+function SwapRequests() {
+  const requests = useAsync(fetchSwapRequests, []);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const list = requests.data ?? [];
+  if (list.length === 0) return null;
+
+  async function respond(id: string, accept: boolean) {
+    setBusy(id + accept);
+    setError(null);
+    try {
+      await respondToSwap(id, accept);
+      await requests.reload();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <View className="gap-3">
+      <Title>Swap socials?</Title>
+      {error ? <ErrorNote error={error} /> : null}
+      {list.map((r) => (
+        <Card key={r.id} accent="clay" className="gap-2">
+          <SectionTitle>{r.first_name ?? 'Someone'} would like to swap socials</SectionTitle>
+          {r.venue_name ? <Caption>You talked at {r.venue_name}{r.met_at ? ` · ${relativeDay(r.met_at)}` : ''}</Caption> : null}
+          <Caption>If you say no, they won&apos;t be told, and they can&apos;t ask again.</Caption>
+          <View className="flex-row gap-2">
+            <Button className="flex-1" label="Swap" busy={busy === r.id + 'true'} onPress={() => void respond(r.id, true)} />
+            <Button className="flex-1" label="No thanks" variant="quiet" busy={busy === r.id + 'false'} onPress={() => void respond(r.id, false)} />
+          </View>
+        </Card>
+      ))}
+    </View>
+  );
+}
+
+/** People you swapped socials with but didn't both vote "good" (connections show theirs above). */
+function MyContacts() {
+  const contacts = useAsync(fetchContacts, []);
+  const list = (contacts.data ?? []).filter((c) => !c.connected);
+  if (list.length === 0) return null;
+  return (
+    <View className="gap-3">
+      <Title>Swapped socials</Title>
+      {list.map((c) => (
+        <Card key={c.id} className="gap-2">
+          <SectionTitle>{c.first_name ?? 'Someone'}</SectionTitle>
+          {c.venue_name ? <Caption>Met at {c.venue_name}{c.met_at ? ` · ${relativeDay(c.met_at)}` : ''}</Caption> : null}
+          <SocialsList socials={c.socials} />
+        </Card>
+      ))}
+    </View>
+  );
+}
+
+/** Chatting history: one line per conversation, nothing about anyone's votes. */
+function ChatHistory() {
+  const history = useAsync(() => fetchHistory(20), []);
+  const list = history.data ?? [];
+  if (list.length === 0) return null;
+  return (
+    <View className="gap-3">
+      <Title>Chatting history</Title>
+      {list.map((h) => (
+        <Card key={h.id} className="gap-1">
+          <SectionTitle>{h.venue_name ?? 'A chat table'}{h.table_label ? ` · ${h.table_label}` : ''}</SectionTitle>
+          <Caption>
+            {relativeDay(h.started_at)} · {h.minutes} min · {h.people} people · {endReasonLabel(h.end_reason)}
+          </Caption>
+          {h.connected_with.length ? <Body>Connected with {h.connected_with.join(', ')}</Body> : null}
+        </Card>
+      ))}
     </View>
   );
 }

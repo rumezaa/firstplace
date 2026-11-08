@@ -3,7 +3,7 @@ import '../global.css';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
+import { Fraunces_500Medium, Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
 import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold } from '@expo-google-fonts/figtree';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,7 +18,7 @@ export default function RootLayout() {
   // Bundled with the app, so this resolves almost instantly; until then (or if
   // a font fails) text falls back to the system face rather than blocking.
   useFonts({
-    BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold,
+    Fraunces_500Medium, Fraunces_600SemiBold,
     Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold,
   });
   return (

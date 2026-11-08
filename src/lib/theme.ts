@@ -43,13 +43,14 @@ export const colors = {
  * roughly the same; every pressable in this app should be at least this tall.
  */
 /**
- * Typefaces (loaded in app/_layout.tsx). Headlines: Bricolage Grotesque, a
- * warm grotesque with character at large sizes. Everything else: Figtree,
+ * Typefaces (loaded in app/_layout.tsx). Headlines: Fraunces, a soft serif
+ * that reads warm and calm rather than loud. Everything else: Figtree,
  * friendly and very legible at small sizes. Swap here to change the whole app.
  */
 export const fonts = {
-  displayBold: 'BricolageGrotesque_700Bold',
-  displaySemibold: 'BricolageGrotesque_600SemiBold',
+  // Fraunces runs heavy, so bold headlines use its semibold, and so on down.
+  displayBold: 'Fraunces_600SemiBold',
+  displaySemibold: 'Fraunces_500Medium',
   regular: 'Figtree_400Regular',
   medium: 'Figtree_500Medium',
   semibold: 'Figtree_600SemiBold',

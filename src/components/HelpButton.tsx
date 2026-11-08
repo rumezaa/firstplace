@@ -12,7 +12,7 @@ export function HelpButton() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  if (pathname === '/help' || pathname.startsWith('/kiosk')) return null;
+  if (pathname === '/help' || pathname.startsWith('/kiosk') || pathname.startsWith('/box')) return null;
 
   return (
     <Pressable

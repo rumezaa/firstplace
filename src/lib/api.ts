@@ -93,8 +93,18 @@ export class ApiError extends Error {
 }
 
 /** A message from whatever was thrown, for showing in the UI. */
+const HINT_MESSAGES: Record<string, string> = {
+  no_claim: 'Your seat was released. Tap the box again to take it.',
+  no_conversation: 'That conversation has already closed.',
+  conversation_active: 'Finish your conversation first.',
+  request_expired: 'That request ran out before you answered.',
+  box_off: 'This box is off right now, so any seat is just a seat.',
+};
+
 export function errorMessage(error: unknown, fallback = 'Something went wrong.'): string {
   if (!error) return fallback;
+  const hint = (error as { hint?: unknown }).hint;
+  if (typeof hint === 'string' && HINT_MESSAGES[hint]) return HINT_MESSAGES[hint];
   if (typeof error === 'string') return error;
   if (typeof error === 'object') {
     const e = error as { message?: unknown };

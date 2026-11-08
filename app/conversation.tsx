@@ -58,6 +58,10 @@ export default function ConversationScreen() {
     <Screen>
       <Stack.Screen options={{ title: ended ? 'How was it?' : 'In conversation' }} />
       {error ? <ErrorNote error={error} /> : null}
+      {/* The conversation closed under us (timer, the other person left): never a dead end. */}
+      {error === 'That conversation has already closed.' ? (
+        <Button label="Back to Explore" variant="secondary" onPress={() => router.replace('/')} />
+      ) : null}
       {reporting ? (
         <ReportForm conversationId={c.id} onDone={() => { setReporting(false); router.replace('/'); }} onCancel={() => setReporting(false)} />
       ) : ended ? (
@@ -103,6 +107,7 @@ function Live({
       onEnded();
     } catch (e) {
       onError(errorMessage(e));
+      onEnded(); // re-read: it may have ended or changed meanwhile
     } finally {
       setBusy(null);
     }

@@ -275,8 +275,11 @@ export function ErrorNote({ error, onRetry }: { error: Error | string; onRetry?:
   const message = typeof error === 'string' ? error : error.message;
   return (
     <Card className="gap-3">
-      <SectionTitle>Couldn&apos;t load this</SectionTitle>
-      <Body>{message}</Body>
+      {/* Only loading errors get a title; a refused button just says why. */}
+      {onRetry ? <SectionTitle>Couldn&apos;t load this</SectionTitle> : null}
+      <View accessibilityRole="alert" accessibilityLiveRegion="polite">
+        <Body className={onRetry ? undefined : 'text-espresso'}>{message}</Body>
+      </View>
       {onRetry ? <Button label="Try again" variant="secondary" onPress={onRetry} /> : null}
     </Card>
   );

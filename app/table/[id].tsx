@@ -52,10 +52,15 @@ export default function TableScreen() {
     setError(null);
     try {
       await fn();
-      await view.reload();
     } catch (e) {
+      if ((e as { hint?: string }).hint === 'conversation_active') {
+        router.replace('/conversation');
+        return;
+      }
       setError(errorMessage(e));
     } finally {
+      // Success or not, show the table as it really is now (taken, released, off...).
+      await view.reload().catch(() => undefined);
       acting.current = false;
       setBusy(null);
     }

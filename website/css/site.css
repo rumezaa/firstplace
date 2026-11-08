@@ -71,12 +71,14 @@ a { color: inherit; }
 /* Panels: portrait first */
 .panel { position: relative; scroll-snap-align: start; padding-bottom: 40px; }
 .panel picture, .panel img { width: 100%; }
+.panel img { display: block; }
 .panel img { height: 68svh; object-fit: cover; object-position: var(--focus-x, 50%) 50%; }
 .panel .card { position: relative; margin: -32px var(--gutter) 0; z-index: 2; }
-#p1 { --focus-x: 72%; }
+#p1 { --focus-x: 80%; }
+#p1 img { height: 52svh; }
 #p2 { --focus-x: 32%; }
-#p3 { --focus-x: 30%; }
-#p4 { --focus-x: 40%; }
+#p3 { --focus-x: 24%; }
+#p4 { --focus-x: 28%; }
 #p5 { --focus-x: 50%; }
 #p6 { --focus-x: 50%; }
 
@@ -91,9 +93,11 @@ a { color: inherit; }
 
 /* Panels: landscape / wide */
 @media (min-aspect-ratio: 1/1) {
-  .panel { height: 100svh; min-height: 520px; padding: 0; overflow: hidden; }
+  /* a snapped panel starts below the fixed header, so it is one header shorter than the screen; p1 starts at the very top */
+  .panel { height: calc(100svh - var(--header-h)); min-height: 520px; padding: 0; overflow: hidden; }
+  #p1 { height: 100svh; }
   .panel picture { position: absolute; inset: 0; }
-  .panel img { height: 100%; object-position: 50% 50%; }
+  .panel img, #p1 img { height: 100%; object-position: 50% 50%; }
   .panel .card {
     position: absolute; margin: 0; max-width: min(420px, 40vw);
   }
@@ -125,7 +129,7 @@ a { color: inherit; }
 
 .site-footer {
   background: var(--ink); color: var(--paper); border-top: 3px solid var(--ink);
-  padding: 40px var(--gutter); display: grid; gap: 8px; justify-items: start;
+  padding: 40px max(var(--gutter), calc((100% - 960px) / 2)); display: grid; gap: 8px; justify-items: start;
 }
 .site-footer .footer-name { font: 600 1.25rem var(--display); }
 
@@ -154,9 +158,9 @@ a { color: inherit; }
 @media (min-width: 800px) { .lights { grid-template-columns: repeat(3, 1fr); } }
 
 /* Tabs */
-.tablist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; }
+.tablist { display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 20px; }
 .tablist [role="tab"] {
-  flex: none; min-height: 48px; padding: 8px 18px; cursor: pointer;
+  flex: none; white-space: nowrap; min-height: 48px; padding: 8px 18px; cursor: pointer;
   font: 600 1.0625rem var(--display); color: var(--ink);
   background: var(--cream); border: 3px solid var(--ink); border-bottom: 0;
   border-radius: 14px 14px 0 0; margin-bottom: 0;
@@ -206,7 +210,7 @@ a { color: inherit; }
 .stack li { padding-left: 1.2em; position: relative; }
 .stack li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 0.6em; height: 0.6em; border: 3px solid var(--ink); border-radius: 50%; background: var(--butter); box-sizing: content-box; transform: translate(-3px, -3px) scale(0.8); }
 @media (min-width: 700px) { .stack { grid-template-columns: 1fr 1fr; column-gap: 24px; } }
-@media (max-width: 699px) {
+@media (max-width: 859px) {
   .diagram--wide { display: none; }
   .diagram--narrow { display: block; }
 }

@@ -224,3 +224,21 @@ test('diagram', () => {
   }
   assert.ok(!/<(filter|linearGradient|radialGradient)/.test(built));
 });
+
+// ---- Task 6: visual pass fixes ----
+test('skip link targets main', () => {
+  const h = html();
+  assert.match(h, /<a class="skip-link" href="#main">/);
+  assert.match(h, /<main id="main"/);
+});
+
+test('narrow diagram below 860px, tabs never wrap', () => {
+  assert.match(css(), /@media \(max-width: 859px\) \{\s*\.diagram--wide \{ display: none; \}/);
+  const tablist = cssRules().find((r) => r.selector === '.tablist');
+  assert.ok(tablist && /flex-wrap:\s*nowrap/.test(tablist.body));
+});
+
+test('landscape panels sit below the header', () => {
+  const block = mediaBlocks('(min-aspect-ratio: 1/1)')[0];
+  assert.match(block, /\.panel \{ height: calc\(100svh - var\(--header-h\)\)/);
+});

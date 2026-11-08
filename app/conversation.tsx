@@ -71,6 +71,7 @@ export default function ConversationScreen() {
           conversation={c}
           onVoted={() => (endedId === c.id ? reload() : setEndedId(c.id))}
           onDone={() => router.replace('/')}
+          onConnected={() => router.replace('/connections')}
           onReport={() => setReporting(true)}
         />
       ) : (
@@ -183,11 +184,13 @@ function Vote({
   conversation: c,
   onVoted,
   onDone,
+  onConnected,
   onReport,
 }: {
   conversation: Conversation;
   onVoted: () => void;
   onDone: () => void;
+  onConnected: () => void;
   onReport: () => void;
 }) {
   // Reporting stays available after a conversation ends, whatever the vote.
@@ -213,9 +216,10 @@ function Vote({
       <>
         <Title>You&apos;re connected</Title>
         <Card accent="sage" className="gap-2">
-          <Body>You both said it was a good conversation. You&apos;ll find {c.their_first_name ?? 'them'} under Connections.</Body>
+          <Body>You both said it was a good conversation. {c.their_first_name ?? 'They'} is now in your People tab, where you can plan to meet again.</Body>
         </Card>
-        <Button label="Done" onPress={onDone} />
+        <Button label={`See ${c.their_first_name ?? 'them'} in People`} onPress={onConnected} />
+        <Button label="Back to the map" variant="quiet" onPress={onDone} />
         {reportLink}
       </>
     );

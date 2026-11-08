@@ -95,18 +95,19 @@ export default function ProfileScreen() {
       }
     >
       {/* Header: who you are here, at a glance. */}
-      <View className="flex-row items-center gap-4">
+      {/* Extra room below so the header never crowds the first card. */}
+      <View className="mb-3 flex-row items-center gap-4">
         <View
-          style={{ width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center' }}
           className="bg-clay-soft"
           accessible={false}
         >
-          <Text display className="text-clay text-[30px] font-bold">
+          <Text display className="text-clay text-[26px] font-bold">
             {initials(nameValue)}
           </Text>
         </View>
         <View className="flex-1 gap-0.5">
-          <Text display accessibilityRole="header" className="text-espresso text-[34px] leading-[40px] font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+          <Text display accessibilityRole="header" className="text-espresso text-[30px] leading-[36px] font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {nameValue?.trim() || 'Your profile'}
           </Text>
           <Caption numberOfLines={1}>{session?.user.email}</Caption>

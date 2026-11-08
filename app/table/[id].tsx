@@ -279,7 +279,7 @@ function IncomingRequests({ onAccepted }: { onAccepted: () => void }) {
   return (
     <>
       {cards.map((card) => {
-        const likes = [...card.shared.interests, ...card.shared.topics].slice(0, 3);
+        const likes = [...new Set([...card.shared.interests, ...card.shared.topics])].slice(0, 3);
         return (
           <Card key={card.id} className="gap-4">
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

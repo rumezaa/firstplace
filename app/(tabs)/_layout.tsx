@@ -62,13 +62,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="rewards"
-        options={{
-          title: 'Rewards',
-          href: null, // v2: rewards live inside You
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: 'You',

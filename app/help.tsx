@@ -53,7 +53,7 @@ export default function Help() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: 'Help', presentation: 'modal' }} />
+      <Stack.Screen options={{ title: '', presentation: 'modal' }} />
       <Title>Help</Title>
 
       <Pressable

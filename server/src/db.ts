@@ -11,6 +11,14 @@ export const pool = new pg.Pool({ ...pgConfig(env.databaseUrl), max: 10 });
 pool.on('error', (err) => {
   console.warn('[db] idle connection lost, will reconnect:', err.message);
 });
+// A connection that's checked out (mid-request or mid-job) reports the same
+// failure on the client itself, not the pool. Give every client a listener so
+// that also becomes a failed request, not a crashed server.
+pool.on('connect', (client) => {
+  client.on('error', (err) => {
+    console.warn('[db] connection lost during a query:', err.message);
+  });
+});
 
 export type Db = pg.PoolClient;
 

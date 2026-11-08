@@ -21,6 +21,7 @@ import {
 import { colors } from '@/lib/theme';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
+import { useIsSignedIn } from '@/providers/SessionProvider';
 import { LightPicker } from '@/components/LightPicker';
 import { LightPole } from '@/components/LightPole';
 import { Badge, Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, Title } from '@/components/ui';
@@ -37,6 +38,7 @@ export default function TableScreen() {
   const view = useAsync(() => fetchTableView(id), [id]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const signedIn = useIsSignedIn();
 
   const reload = useCallback(() => void view.reload(), [view]);
   useVenueTablesRealtime(id, reload);
@@ -104,7 +106,12 @@ export default function TableScreen() {
           {!table.box_enabled ? (
             <Body className="mt-6">This table isn&apos;t a conversation zone right now.</Body>
           ) : light === 'off' ? (
-            <ClaimTable busy={busy} onClaim={(l) => run('claim', () => claimTable(table.id, l))} />
+            <ClaimTable
+              busy={busy}
+              signedIn={signedIn}
+              onSignIn={() => router.push('/sign-in')}
+              onClaim={(l) => run('claim', () => claimTable(table.id, l))}
+            />
           ) : light === 'green' ? (
             <View style={{ marginTop: 24, gap: 8 }}>
               <SectionTitle className="text-[22px] leading-[28px] font-bold">Walk over and say hi.</SectionTitle>
@@ -157,13 +164,28 @@ export default function TableScreen() {
 
 /* -------------------------------------------------------------- claiming -- */
 
-function ClaimTable({ busy, onClaim }: { busy: string | null; onClaim: (l: Light) => void }) {
+function ClaimTable({
+  busy,
+  signedIn,
+  onSignIn,
+  onClaim,
+}: {
+  busy: string | null;
+  signedIn: boolean;
+  onSignIn: () => void;
+  onClaim: (l: Light) => void;
+}) {
   const [choice, setChoice] = useState<Light>('yellow');
   return (
     <View style={{ marginTop: 28, gap: 12 }}>
       <SectionTitle>Your light</SectionTitle>
       <LightPicker value={choice} onChange={setChoice} />
-      <Button className="mt-5" label="Claim table" busy={busy === 'claim'} onPress={() => onClaim(choice)} />
+      {signedIn ? (
+        <Button className="mt-5" label="Claim table" busy={busy === 'claim'} onPress={() => onClaim(choice)} />
+      ) : (
+        // A box tap opens this page signed out. Claiming needs an account.
+        <Button className="mt-5" label="Sign in to claim" onPress={onSignIn} />
+      )}
       <Caption className="text-center">For right now. Tables can&apos;t be reserved.</Caption>
     </View>
   );

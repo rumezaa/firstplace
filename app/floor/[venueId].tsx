@@ -180,7 +180,7 @@ function FloorMap({
 
 /**
  * The traced building in FirstPlace's palette: a soft shadow, white floor,
- * rooms in warm grey, corridors in a pale teal wash, stairs and elevators in
+ * rooms in warm grey separated by white gaps instead of lines, corridors in a pale teal wash, stairs and elevators in
  * the accent, washrooms muted. Area names sit on top, quietly.
  */
 function PlanDrawing({ plan, labels }: { plan: FloorPlan; labels: { text: string; x: number; y: number }[] }) {
@@ -195,15 +195,15 @@ function PlanDrawing({ plan, labels }: { plan: FloorPlan; labels: { text: string
       pointerEvents="none"
       {...(Platform.OS === 'web' ? { 'aria-hidden': true } : { importantForAccessibility: 'no-hide-descendants' as const })}
     >
-      {/* Shadow, then the floor and its wall */}
-      <Path d={plan.outline} fill="#000" opacity={0.06} transform="translate(4 6)" />
-      <Path d={plan.outline} fill={colors.surface} stroke={colors.espresso} strokeWidth={3} strokeLinejoin="round" />
+      {/* Shadow, then the floor. No outline: the shape alone carries the building. */}
+      <Path d={plan.outline} fill="#000" opacity={0.07} transform="translate(0 6)" />
+      <Path d={plan.outline} fill={colors.surface} />
       <G>
         {plan.corridors.map((d, i) => (
           <Path key={`c${i}`} d={d} fill={colors.claySoft} />
         ))}
         {plan.rooms.map((d, i) => (
-          <Path key={`r${i}`} d={d} fill={colors.sunk} stroke="#D8D8D2" strokeWidth={1} strokeLinejoin="round" />
+          <Path key={`r${i}`} d={d} fill={colors.sunk} stroke={colors.surface} strokeWidth={2} strokeLinejoin="round" />
         ))}
         {plan.washrooms.map((d, i) => (
           <Path key={`w${i}`} d={d} fill="#DCDCD6" />

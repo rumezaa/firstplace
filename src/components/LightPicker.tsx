@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { LIGHT_INFO, type Light } from '@/lib/conversations';
 import { colors } from '@/lib/theme';
@@ -11,7 +12,7 @@ const SYM: Record<Light, { bg: string; ink: string }> = {
 
 const EXPLAIN: Record<Light, string> = {
   green: 'Anyone can walk over and say hi.',
-  yellow: "People can ask to join. You'll see what you have in common, then decide.",
+  yellow: 'Free seat.',
   red: "Nobody will approach. You're just here.",
 };
 
@@ -34,7 +35,8 @@ export function LightPicker({
         accessibilityRole="radiogroup"
         style={{ flexDirection: 'row', gap: 2, padding: 3, backgroundColor: colors.sunk, borderRadius: 12 }}
       >
-        {(['green', 'yellow', 'red'] as Light[]).map((l) => {
+        {/* Seated people choose green or red; yellow means the seat is free. */}
+        {(['green', 'red'] as Light[]).map((l) => {
           const on = value === l;
           return (
             <Pressable

@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Platform, Pressable, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { leaveNow } from '@/lib/conversations';
 import { MIN_TAP_TARGET, colors } from '@/lib/theme';
@@ -78,7 +79,7 @@ export default function Help() {
             left === 'done'
               ? 'Your light is off. Nobody was told why.'
               : left === 'offline'
-                ? "Couldn't reach FirstPlace. Just walk away; your table frees itself."
+                ? "Couldn't reach ChatterBox. Just walk away; your table frees itself."
                 : session
                   ? 'Check out and turn your light off'
                   : 'Not signed in, so nothing to check out of'

@@ -66,14 +66,14 @@ export interface Connection {
 
 export const LIGHT_INFO: Record<BoxLight, { label: string; meaning: string; symbol: string; pattern: string }> = {
   green: { label: 'Green', meaning: 'Open to talk to anyone', symbol: '✓', pattern: 'steady' },
-  yellow: { label: 'Yellow', meaning: 'Open to talk, but I choose who', symbol: '?', pattern: 'slow pulse' },
+  yellow: { label: 'Yellow', meaning: 'Free seat, nobody here yet', symbol: '+', pattern: 'slow pulse' },
   red: { label: 'Red', meaning: 'Not open right now', symbol: '✕', pattern: 'solid' },
-  off: { label: 'Off', meaning: 'Just a table', symbol: '–', pattern: 'dark' },
+  off: { label: 'Off', meaning: 'Not a ChatterBox table right now', symbol: '–', pattern: 'dark' },
 };
 
 // ------------------------------------------------------------------- box ---
 export const fetchTableView = (tableId: string) => api.get<TableView>(`/tables/${tableId}/view`);
-export const claimTable = (tableId: string, light: Light = 'yellow') =>
+export const claimTable = (tableId: string, light: Light = 'green') =>
   api.post<{ light: Light }>(`/tables/${tableId}/claim`, { light });
 export const setLight = (light: Light) => api.post<{ light: Light }>('/me/light', { light });
 export const stepAway = () => api.post<{ away_until: string }>('/me/step-away');
@@ -86,6 +86,8 @@ export const requestChat = (tableId: string) =>
   api.post<{ request_id: string; expires_at: string }>(`/tables/${tableId}/request`);
 export const fetchRequestStatus = (requestId: string) =>
   api.get<{ status: 'pending' | 'accepted' | 'not_available'; conversation_id?: string }>(`/requests/${requestId}`);
+export const cancelRequest = (requestId: string) =>
+  api.post<{ cancelled: boolean }>(`/requests/${requestId}/cancel`);
 export const fetchIncomingRequests = () => api.get<RequestCard[]>('/me/requests');
 export const respondToRequest = (requestId: string, accept: boolean, minutes = 30) =>
   api.post<{ accepted: boolean; conversation_id?: string }>(`/requests/${requestId}/respond`, { accept, minutes });

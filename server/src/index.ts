@@ -91,7 +91,7 @@ app.onError((err, c) => {
 });
 
 serve({ fetch: app.fetch, port: env.port }, (info) => {
-  console.log(`FirstPlace API on http://localhost:${info.port}`);
+  console.log(`ChatterBox API on http://localhost:${info.port}`);
   startJobs();
   void startCalgaryData();
 });

@@ -1,15 +1,6 @@
 import { useContext, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  type PressableProps,
-  type ScrollViewProps,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View, type PressableProps, type ScrollViewProps } from 'react-native';
+import { Text } from '@/components/Text';
 import { HeaderShownContext } from 'expo-router/react-navigation';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
@@ -38,7 +29,7 @@ export function Screen({ children, scroll = true, refreshControl, className }: S
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerClassName={`px-5 pb-16 gap-4 ${hasHeader ? 'pt-2' : 'pt-12'}`}
+        contentContainerClassName={`px-5 pb-20 gap-5 ${hasHeader ? 'pt-2' : 'pt-14'}`}
         refreshControl={refreshControl}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -64,8 +55,10 @@ export function Screen({ children, scroll = true, refreshControl, className }: S
 export function Title({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <Text
+      display
       accessibilityRole="header"
-      className={`text-espresso text-[34px] leading-[41px] font-bold tracking-tight ${className ?? ''}`}
+      className={`text-espresso text-[30px] leading-[35px] font-bold ${className ?? ''}`}
+      style={{ letterSpacing: -0.6 }}
     >
       {children}
     </Text>
@@ -76,7 +69,7 @@ export function SectionTitle({ children, className }: { children: ReactNode; cla
   return (
     <Text
       accessibilityRole="header"
-      className={`text-espresso text-[17px] leading-[22px] font-semibold ${className ?? ''}`}
+      className={`text-espresso text-[18px] leading-[23px] font-semibold ${className ?? ''}`}
     >
       {children}
     </Text>
@@ -91,7 +84,7 @@ interface TextBlockProps {
 
 export function Body({ children, className, numberOfLines }: TextBlockProps) {
   return (
-    <Text numberOfLines={numberOfLines} className={`text-mocha text-[17px] leading-[23px] ${className ?? ''}`}>
+    <Text numberOfLines={numberOfLines} className={`text-mocha text-[16px] leading-[23px] ${className ?? ''}`}>
       {children}
     </Text>
   );
@@ -99,7 +92,7 @@ export function Body({ children, className, numberOfLines }: TextBlockProps) {
 
 export function Caption({ children, className, numberOfLines }: TextBlockProps) {
   return (
-    <Text numberOfLines={numberOfLines} className={`text-mocha text-[13px] leading-[18px] ${className ?? ''}`}>
+    <Text numberOfLines={numberOfLines} className={`text-mocha text-[13px] leading-[19px] ${className ?? ''}`}>
       {children}
     </Text>
   );
@@ -199,12 +192,12 @@ export function Chip({
       accessibilityState={{ selected }}
       style={interactive ? { minHeight: MIN_TAP_TARGET } : undefined}
       className={`rounded-chip justify-center px-4 ${interactive ? '' : 'h-8 px-3'} ${
-        selected ? 'bg-espresso' : interactive ? 'bg-surface border border-border-warm' : 'bg-sunk'
+        selected ? 'bg-clay-soft border border-clay' : interactive ? 'bg-surface border border-border-warm' : 'bg-sunk'
       }`}
     >
       <Text
         className={`${interactive ? 'text-base' : 'text-[15px]'} font-medium ${
-          selected ? 'text-white' : 'text-espresso'
+          selected ? 'text-clay' : 'text-espresso'
         }`}
       >
         {selected ? '✓  ' : ''}

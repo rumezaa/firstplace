@@ -1,5 +1,5 @@
 /**
- * Traced from a University of Calgary floor plan and redrawn in FirstPlace's own
+ * Traced from a University of Calgary floor plan and redrawn in ChatterBox's own
  * style by scripts/trace_floor.py — don't hand-edit. Upright: north at the top.
  */
 export const TFDL3_PLAN = {

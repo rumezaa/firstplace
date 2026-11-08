@@ -55,10 +55,8 @@ export default function ConnectionsScreen() {
       <MyConnections />
 
       <View className="gap-1">
-        <Title>Familiar faces</Title>
-        <Body>
-          The people you keep seeing, without either of you having to make the first move.
-        </Body>
+        <SectionTitle className="text-[22px] leading-[28px]">Familiar faces</SectionTitle>
+        <Caption>People you keep running into. Nobody has to make the first move.</Caption>
       </View>
 
       {optedOut ? (
@@ -99,8 +97,8 @@ export default function ConnectionsScreen() {
       <Card className="gap-2">
         <SectionTitle>How this works</SectionTitle>
         <Caption>
-          We count overlapping check-ins at the same place. Three or more and you both get a card.
-          Names are revealed only when you have both said yes. Nobody ever sees where you are right
+          Three visits at the same place and time makes a card. First names appear only after you
+          both say yes. Nobody ever sees where you are right
           now, and going incognito takes you out of this entirely.
         </Caption>
       </Card>
@@ -161,7 +159,7 @@ function FaceCard({
 
       {state === 'mutual' ? (
         <Button
-          label={`Meet at the chat table at ${card.venue_name}`}
+          label="Meet at the chat table"
           variant="secondary"
           onPress={() => router.push(`/venue/${card.venue_id}`)}
         />

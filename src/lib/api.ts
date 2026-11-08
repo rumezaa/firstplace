@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 /**
- * Client for the FirstPlace API server (server/ in this repo).
+ * Client for the ChatterBox API server (server/ in this repo).
  *
  * Every request goes through the server, which holds all secrets, verifies the
  * login and runs the query as you, so the database's privacy rules apply.
@@ -58,7 +58,7 @@ export const API_URL = resolveApiUrl();
 /** A message naming what's missing, or null when the app can reach an API. */
 export const apiConfigProblem: string | null = API_URL
   ? null
-  : 'EXPO_PUBLIC_API_URL is not set. Point it at the FirstPlace API server.';
+  : 'EXPO_PUBLIC_API_URL is not set. Point it at the ChatterBox API server.';
 
 export const isApiConfigured = apiConfigProblem === null;
 
@@ -131,8 +131,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   } catch {
     throw new ApiError(
       __DEV__
-        ? `Can't reach FirstPlace at ${API_URL}. Check that the API server is running and on the same network.`
-        : "Can't reach FirstPlace right now. Check your connection.",
+        ? `Can't reach ChatterBox at ${API_URL}. Check that the API server is running and on the same network.`
+        : "Can't reach ChatterBox right now. Check your connection.",
       0,
     );
   }

@@ -42,4 +42,19 @@ export const colors = {
  * Minimum hit target. 44pt is the Apple HIG floor and Android's 48dp maps to
  * roughly the same; every pressable in this app should be at least this tall.
  */
+/**
+ * Typefaces (loaded in app/_layout.tsx). Headlines: Fraunces, a soft serif
+ * that reads warm and calm rather than loud. Everything else: Figtree,
+ * friendly and very legible at small sizes. Swap here to change the whole app.
+ */
+export const fonts = {
+  // Fraunces runs heavy, so bold headlines use its semibold, and so on down.
+  displayBold: 'Fraunces_600SemiBold',
+  displaySemibold: 'Fraunces_500Medium',
+  regular: 'Figtree_400Regular',
+  medium: 'Figtree_500Medium',
+  semibold: 'Figtree_600SemiBold',
+  bold: 'Figtree_700Bold',
+} as const;
+
 export const MIN_TAP_TARGET = 48;

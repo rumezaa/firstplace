@@ -5,7 +5,7 @@
  * expo.slug and expo.scheme. The scheme is part of the Auth0 callback URL
  * (firstplace://...), so a new scheme must also be added in Auth0.
  */
-export const APP_NAME = 'FirstPlace';
+export const APP_NAME = 'ChatterBox';
 
 export const APP_TAGLINE = 'Find somewhere to be, not just somewhere to sit.';
 

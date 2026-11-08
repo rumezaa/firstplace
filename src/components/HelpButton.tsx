@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePathname, useRouter } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
+import { Text } from '@/components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '@/lib/theme';
@@ -13,7 +14,8 @@ export function HelpButton() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  if (pathname === '/help') return null;
+  // Hidden on Help itself and the one-time intro (which has its own Skip).
+  if (pathname === '/help' || pathname === '/welcome') return null;
 
   return (
     <Pressable

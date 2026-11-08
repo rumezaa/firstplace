@@ -1,11 +1,25 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Redirect, Tabs } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Redirect, Tabs, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 import { useSession } from '@/providers/SessionProvider';
 import { colors } from '@/lib/theme';
+import { INTRO_SEEN_KEY } from '../welcome';
 
 export default function TabsLayout() {
   const { session } = useSession();
+  const router = useRouter();
+
+  // First time in: the short intro, once per device.
+  useEffect(() => {
+    if (!session) return;
+    AsyncStorage.getItem(INTRO_SEEN_KEY)
+      .then((seen) => {
+        if (!seen) router.push('/welcome');
+      })
+      .catch(() => undefined);
+  }, [session, router]);
 
   // The gate for every tab. Deeper routes (venue, kiosk, dashboard) are reached
   // from inside the tabs, so this covers them too.

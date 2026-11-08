@@ -1,14 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
-import { fetchRequestStatus } from '@/lib/conversations';
+import { cancelRequest, fetchRequestStatus } from '@/lib/conversations';
 import { colors } from '@/lib/theme';
 import { fetchVenueLive, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
-import { Body, Screen, Title } from '@/components/ui';
+import { Body, Button, Screen, Title } from '@/components/ui';
 
 /**
  * After "Send request" (design kit v2, 4.6 / 4.7). Pending → a small spinner
@@ -18,6 +19,7 @@ import { Body, Screen, Title } from '@/components/ui';
 export default function Waiting() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const router = useRouter();
+  const [cancelling, setCancelling] = useState(false);
   const status = useAsync(() => fetchRequestStatus(requestId), [requestId]);
   const reload = useCallback(() => void status.reload(), [status]);
   const pending = status.data?.status === 'pending' || !status.data;
@@ -34,6 +36,7 @@ export default function Waiting() {
         <Title>Not available right now</Title>
         <Body>That&apos;s normal, and it isn&apos;t about you. These places have people open to talk:</Body>
         <OpenNearby onPick={(venueId) => router.replace(`/venue/${venueId}`)} />
+        <Button label="Back to Explore" variant="quiet" onPress={() => router.replace('/')} />
       </Screen>
     );
   }
@@ -47,6 +50,19 @@ export default function Waiting() {
       </View>
       <Title>Request sent</Title>
       <Body>Stay where you are. If they say yes, you&apos;ll go straight to the conversation.</Body>
+      <Button
+        className="mt-4"
+        label="Take back request"
+        variant="quiet"
+        busy={cancelling}
+        onPress={async () => {
+          setCancelling(true);
+          // Silent for the other person, same as a request that runs out.
+          await cancelRequest(requestId).catch(() => undefined);
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        }}
+      />
     </Screen>
   );
 }

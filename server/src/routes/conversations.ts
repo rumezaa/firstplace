@@ -54,6 +54,11 @@ conversations.get('/requests/:id', async (c) =>
   c.json(await rpc(c.get('userId'), 'public.my_request_status($1)', [c.req.param('id')])),
 );
 
+/** Asker withdraws a pending request. Silent to the other person. */
+conversations.post('/requests/:id/cancel', async (c) =>
+  c.json(await rpc(c.get('userId'), 'public.cancel_request($1)', [c.req.param('id')])),
+);
+
 /** Seated person: request cards waiting for an answer. */
 conversations.get('/me/requests', async (c) => {
   const rows = await asUser(c.get('userId'), (db) => db.query('select * from public.my_incoming_requests()'));

@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { errorMessage } from '@/lib/api';
 import { colors } from '@/lib/theme';
@@ -44,7 +45,7 @@ export default function ConversationScreen() {
     return (
       <Screen>
         <Title>No conversation right now</Title>
-        <Body>Tap a box with a green or yellow light to start one.</Body>
+        <Body>Find a green light and say hi to start one.</Body>
         <Button label="Back" onPress={() => router.replace('/')} />
       </Screen>
     );
@@ -112,21 +113,20 @@ function Live({
 
   return (
     <>
-      <View style={{ gap: 6 }}>
-        <Text style={{ fontSize: 15, color: colors.mocha }}>Talking with {c.their_first_name ?? 'someone new'}</Text>
-        <Text
-          accessibilityLabel={left ? `${left.label} left` : 'No timer'}
-          style={{
-            fontSize: 48,
-            lineHeight: 52,
-            fontWeight: '600',
-            letterSpacing: -1.4,
-            fontVariant: ['tabular-nums'],
-            color: nearEnd ? colors.amber : colors.espresso,
-          }}
-        >
-          {left ? left.label : 'No timer'}
+      <View style={{ gap: 4 }}>
+        <Text style={{ fontSize: 15, color: colors.mocha }}>You&apos;re talking with</Text>
+        <Text display accessibilityRole="header" style={{ fontSize: 40, lineHeight: 44, fontWeight: '700', letterSpacing: -1, color: colors.espresso }}>
+          {c.their_first_name ?? 'Someone new'}
         </Text>
+        {/* Only a real timer gets shown; an open-ended chat has nothing to count. */}
+        {left ? (
+          <Text
+            accessibilityLabel={`${left.label} left`}
+            style={{ fontSize: 17, fontWeight: '600', fontVariant: ['tabular-nums'], color: nearEnd ? colors.amber : colors.mocha }}
+          >
+            {left.label} left
+          </Text>
+        ) : null}
       </View>
 
       {shared.length || c.shared.languages.length ? (

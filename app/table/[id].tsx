@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { errorMessage } from '@/lib/api';
 import {
@@ -11,7 +12,6 @@ import {
   fetchTableView,
   joinGreen,
   leaveNow,
-  requestChat,
   respondToRequest,
   setLight,
   stepAway,
@@ -28,7 +28,7 @@ import { Badge, Body, Button, Caption, Card, ErrorNote, Loading, Screen, Section
 
 /**
  * What you see after tapping a box (design kit v2, section 04):
- *   nobody's claim  → claim it and pick a light (yellow by default)
+ *   free (yellow)   → take it and pick green or red
  *   your claim      → status + light picker in one card, requests, leave
  *   someone's claim → one action for their light: say hi / ask / nothing
  */
@@ -70,7 +70,7 @@ export default function TableScreen() {
 
   const { table, light, mine } = view.data;
   const stateLine =
-    light === 'off' ? 'Just a table right now' : `${LIGHT_INFO[light].label} · ${LIGHT_INFO[light].meaning.toLowerCase()}`;
+    light === 'off' ? 'Not a ChatterBox table right now' : `${LIGHT_INFO[light].label}: ${LIGHT_INFO[light].meaning}`;
 
   return (
     <Screen>
@@ -114,7 +114,8 @@ export default function TableScreen() {
               <SectionTitle>Closed for the night</SectionTitle>
               <Body>Conversation tables are off from 10pm to 6am. You can still sit here; it&apos;s just a table.</Body>
             </View>
-          ) : light === 'off' ? (
+          ) : light === 'yellow' ? (
+            // Yellow = free seat: take it and choose your light.
             <ClaimTable
               busy={busy}
               signedIn={signedIn}
@@ -137,23 +138,10 @@ export default function TableScreen() {
                 }
               />
             </View>
-          ) : light === 'yellow' ? (
+          ) : light === 'off' ? (
             <View style={{ marginTop: 24, gap: 8 }}>
-              <SectionTitle className="text-[22px] leading-[28px] font-bold">Ask to chat</SectionTitle>
-              <Body>
-                They&apos;ll see your first name, that you&apos;re verified, and what you have in common. Nothing else.
-              </Body>
-              <Button
-                className="mt-5"
-                label="Send request"
-                busy={busy === 'request'}
-                onPress={() =>
-                  run('request', async () => {
-                    const r = await requestChat(table.id);
-                    router.replace(`/waiting/${r.request_id}`);
-                  })
-                }
-              />
+              <SectionTitle className="text-[22px] leading-[28px] font-bold">This box is off</SectionTitle>
+              <Body>It&apos;s closed or after hours. Any seat is just a seat for now.</Body>
             </View>
           ) : (
             <View style={{ marginTop: 24, gap: 8 }}>
@@ -164,9 +152,6 @@ export default function TableScreen() {
         </>
       )}
 
-      <Caption className="mt-6">
-        Anyone can sit here. Off: just a table. Green: say hi. Yellow: ask in the app. Red: please don&apos;t disturb.
-      </Caption>
     </Screen>
   );
 }
@@ -184,7 +169,7 @@ function ClaimTable({
   onSignIn: () => void;
   onClaim: (l: Light) => void;
 }) {
-  const [choice, setChoice] = useState<Light>('yellow');
+  const [choice, setChoice] = useState<Light>('green');
   return (
     <View style={{ marginTop: 28, gap: 12 }}>
       <SectionTitle>Your light</SectionTitle>

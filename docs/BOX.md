@@ -46,6 +46,14 @@ python tools/provision.py info --port <PORT>                              # show
 python tools/provision.py qr --port <PORT> --output artifacts/table-qr.svg
 ```
 
-On macOS the port looks like `/dev/cu.usbserial-XXXX` (`ls /dev/cu.*`). Delete `provisioning.local.json` afterwards.
+On macOS the port looks like `/dev/cu.usbserial-XXXX` (`ls /dev/cu.*`); on Windows it's a `COM` port (Device Manager → Ports). Delete `provisioning.local.json` afterwards.
+
+## If the box doesn't light up
+
+Watch it boot with `idf.py -p <PORT> monitor`. A connected box prints `Wi-Fi ready; polling configured table`, then `Valid state received: <colour>`, and the API log shows `GET /hw/tables/…/state` every 2 seconds.
+
+- **No `Wi-Fi ready` line:** the box can't join the hotspot. iPhone hotspots are named like "Name’s iPhone" with a curly `’`, which is easy to mistype. Rename the phone to something plain (Settings → General → About → Name), turn on **Maximize Compatibility** (the ESP32 only sees 2.4 GHz), keep the Personal Hotspot screen open while the box boots, and re-provision.
+- **`Wi-Fi ready` but no requests reach the API:** `base_url` is wrong. The laptop's address can change every time it rejoins the hotspot (`.2` → `.4`), so check `ipconfig getifaddr en0` and re-provision with the new address.
+- **`HTTP 401/404/400`:** the device key isn't in `HW_DEVICE_KEYS`, or the table id is wrong.
 
 Responses the box can get: `200` with a colour, `401` wrong device key, `404` unknown table id, `400` malformed id. The last three show as a configuration fault on the box.

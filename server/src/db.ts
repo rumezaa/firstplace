@@ -1,12 +1,8 @@
 import pg from 'pg';
 import { env } from './env.js';
+import { pgConfig } from './pgConfig.js';
 
-export const pool = new pg.Pool({
-  connectionString: env.databaseUrl,
-  max: 10,
-  // Tiger Cloud requires TLS; local Docker does not.
-  ssl: /localhost|127\.0\.0\.1/.test(env.databaseUrl) ? undefined : { rejectUnauthorized: false },
-});
+export const pool = new pg.Pool({ ...pgConfig(env.databaseUrl), max: 10 });
 
 export type Db = pg.PoolClient;
 

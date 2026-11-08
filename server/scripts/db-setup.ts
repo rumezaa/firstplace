@@ -3,6 +3,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
+import { pgConfig } from '../src/pgConfig.js';
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is not set.');
@@ -12,10 +13,7 @@ const files = (await readdir(path.join(dbDir, 'migrations'))).filter((f) => f.en
   .map((f) => path.join(dbDir, 'migrations', f));
 if (!process.argv.includes('--no-seed')) files.push(path.join(dbDir, 'seed.sql'));
 
-const client = new pg.Client({
-  connectionString: url,
-  ssl: /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false },
-});
+const client = new pg.Client(pgConfig(url));
 await client.connect();
 for (const file of files) {
   try {

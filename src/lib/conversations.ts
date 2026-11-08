@@ -23,6 +23,8 @@ export interface TableView {
   light: BoxLight;
   /** Only ever the caller's own claim at this table. */
   mine: { light: Light; away_until: string | null } | null;
+  /** False overnight (10pm to 6am), when no table can be claimed. */
+  boxes_open?: boolean;
 }
 
 export interface Shared {

@@ -170,7 +170,11 @@ declare
   i         integer;
   v_idx     integer := 0;
 begin
-  for v in select id from public.venues order by id loop
+  -- Skip venues that already have their own tables (e.g. the TFDL floor from
+  -- migration 130), or their chat table would collide with ours.
+  for v in select ven.id from public.venues ven
+           where not exists (select 1 from public.tables t where t.venue_id = ven.id)
+           order by ven.id loop
     v_idx := v_idx + 1;
     v_n   := 4 + (v_idx % 5);   -- 4..8 tables, deterministic
 

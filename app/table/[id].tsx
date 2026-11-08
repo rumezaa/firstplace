@@ -105,6 +105,11 @@ export default function TableScreen() {
 
           {!table.box_enabled ? (
             <Body className="mt-6">This table isn&apos;t a conversation zone right now.</Body>
+          ) : light === 'off' && view.data.boxes_open === false && !mine ? (
+            <View style={{ marginTop: 24, gap: 8 }}>
+              <SectionTitle>Closed for the night</SectionTitle>
+              <Body>Conversation tables are off from 10pm to 6am. You can still sit here; it&apos;s just a table.</Body>
+            </View>
           ) : light === 'off' ? (
             <ClaimTable
               busy={busy}

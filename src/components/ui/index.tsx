@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -8,7 +10,8 @@ import {
   type PressableProps,
   type ScrollViewProps,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderShownContext } from 'expo-router/react-navigation';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { MIN_TAP_TARGET, colors } from '@/lib/theme';
 
@@ -23,19 +26,37 @@ interface ScreenProps {
 }
 
 export function Screen({ children, scroll = true, refreshControl, className }: ScreenProps) {
+  // Under a navigation header, the header already clears the notch, so only
+  // add the top inset (plus room for the floating Help button) on headerless
+  // screens like the tabs. Otherwise iOS gets a double gap at the top.
+  const hasHeader = useContext(HeaderShownContext);
+  const edges: Edge[] = hasHeader ? ['left', 'right'] : ['top', 'left', 'right'];
+
   const body = scroll ? (
-    <ScrollView
-      contentContainerClassName="px-5 pb-16 pt-12 gap-4"
-      refreshControl={refreshControl}
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {children}
-    </ScrollView>
+      <ScrollView
+        contentContainerClassName={`px-5 pb-16 gap-4 ${hasHeader ? 'pt-2' : 'pt-12'}`}
+        refreshControl={refreshControl}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentInsetAdjustmentBehavior="never"
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   ) : (
     <View className="flex-1">{children}</View>
   );
 
-  return <SafeAreaView className={`flex-1 bg-cream ${className ?? ''}`}>{body}</SafeAreaView>;
+  // style, not className: NativeWind doesn't style SafeAreaView.
+  return (
+    <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: colors.cream }}>
+      <View className={`flex-1 ${className ?? ''}`}>{body}</View>
+    </SafeAreaView>
+  );
 }
 
 /* ------------------------------------------------------------- typography -- */
@@ -148,7 +169,7 @@ export function Button({
           className="mr-2"
         />
       ) : null}
-      <Text className={`text-[17px] font-semibold ${textLook}`}>{label}</Text>
+      <Text className={`flex-shrink text-center text-[17px] font-semibold ${textLook}`}>{label}</Text>
     </Pressable>
   );
 }

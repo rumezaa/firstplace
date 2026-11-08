@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { RefreshControl, View } from 'react-native';
 
@@ -18,6 +18,7 @@ import { ChatTableNote, TableGrid, TableGridLegend } from '@/components/TableGri
 import {
   Badge,
   Body,
+  Button,
   Caption,
   Card,
   ErrorNote,
@@ -38,6 +39,7 @@ export default function VenueScreen() {
   const busy = useAsync(() => fetchBusyHours(venueId), [venueId]);
   const crowd = useAsync(() => fetchCrowdTags(venueId), [venueId]);
   // Gemini line from live aggregates; falls back to the venue's own description.
+  const router = useRouter();
   const vibe = useAsync(() => fetchVenueVibe(venueId).catch(() => null), [venueId]);
 
   const refresh = useCallback(() => {
@@ -72,6 +74,9 @@ export default function VenueScreen() {
   }
 
   const l = live.data;
+  // Without Gemini the server falls back to insider_info, which has its own
+  // card below. Use the venue's summary instead so nothing shows twice.
+  const vibeText = vibe.data && vibe.data !== v.insider_info ? vibe.data : v.vibe_summary;
   const presentation = AVAILABILITY[l?.availability ?? 'open'];
   const openToChat = l?.people_open_to_chat ?? 0;
   const rows = tables.data ?? [];
@@ -103,10 +108,10 @@ export default function VenueScreen() {
         <Badge label={v.type === 'study' ? 'Study space' : v.type === 'cafe' ? 'Cafe' : 'Social space'} />
       </View>
 
-      {vibe.data || v.vibe_summary ? (
+      {vibeText ? (
         <Card className="gap-2">
           <SectionTitle>What it&apos;s like right now</SectionTitle>
-          <Body>{vibe.data ?? v.vibe_summary}</Body>
+          <Body>{vibeText}</Body>
         </Card>
       ) : null}
 
@@ -189,18 +194,15 @@ export default function VenueScreen() {
           Tap your phone on the box at any conversation table, or scan the code on its side. Green
           means say hi; yellow means ask in the app.
         </Body>
-        <Link href="/checkin" className="text-clay text-base font-semibold">
-          Find a table
-        </Link>
+        <Button label="Find a table" onPress={() => router.push('/checkin')} />
       </Card>
 
-      <Link
-        href={`/dashboard/${v.id}`}
-        className="text-mocha pt-2 text-center text-xs"
-        accessibilityLabel={`Owner dashboard for ${v.name}`}
-      >
-        Cafe owner? See the anonymous dashboard
-      </Link>
+      <Button
+        label="Owner dashboard"
+        variant="quiet"
+        accessibilityHint={`Opens the anonymous owner dashboard for ${v.name}`}
+        onPress={() => router.push(`/dashboard/${v.id}`)}
+      />
     </Screen>
   );
 }

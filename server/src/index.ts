@@ -60,7 +60,10 @@ app.get('/tables/:tableId/view', async (c) => {
       ? (await db.query(
           `select light, away_until from public.checkins where table_id = $1 and checked_out_at is null`, [id])).rows[0] ?? null
       : null;
-    return { table: t, light, mine };
+    // Boxes go dark overnight (10pm to 6am). Say so up front, so the app
+    // doesn't offer a claim that the database will refuse.
+    const open = (await db.query('select public.boxes_open_now() as o')).rows[0].o as boolean;
+    return { table: t, light, mine, boxes_open: open };
   });
   if (!view) throw new HTTPException(404, { message: "That table isn't a conversation zone." });
   return c.json(view);

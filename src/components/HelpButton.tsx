@@ -30,10 +30,20 @@ export function HelpButton() {
         paddingLeft: 10,
         paddingRight: 12,
         borderRadius: 999,
-        backgroundColor: colors.brickSoft,
+        // Solid, outlined and lifted, so it reads as floating above content
+        // that scrolls underneath it on the headerless tab screens.
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.brickSoft,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
+        zIndex: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
       }}
     >
       <Ionicons name="help-buoy-outline" size={17} color={colors.brick} />

@@ -1,4 +1,4 @@
-import { api } from './api';
+import { API_URL, api } from './api';
 
 /**
  * The PRD's core loop, client side: tap a box → claim it or join/request →
@@ -116,9 +116,22 @@ export const reportUser = (conversationId: string, reason: ReportReason, note?: 
 export const blockUser = (conversationId: string) => api.post(`/conversations/${conversationId}/block`);
 
 // -------------------------------------------------------------- box codes ---
+/**
+ * Where NFC stickers and printed QR codes point: the API server's /t and /v
+ * pages, which forward to the app (server/src/tagLinks.ts). Set
+ * EXPO_PUBLIC_BOX_BASE_URL to the deployed server; blank in dev falls back to
+ * the API URL the app already uses.
+ */
+const BOX_BASE_URL = (process.env.EXPO_PUBLIC_BOX_BASE_URL?.trim() || API_URL || '').replace(/\/+$/, '');
+
 /** What a box's NFC tag / printed QR holds: a link with the table id. */
 export function boxLink(tableId: string): string {
-  return `firstplace://table/${tableId}`;
+  return BOX_BASE_URL ? `${BOX_BASE_URL}/t/${tableId}` : `firstplace://table/${tableId}`;
+}
+
+/** What a venue's entrance tag / QR holds: opens the floor map. */
+export function floorLink(venueId: string): string {
+  return BOX_BASE_URL ? `${BOX_BASE_URL}/v/${venueId}` : `firstplace://floor/${venueId}`;
 }
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -128,6 +141,11 @@ export function parseBoxCode(raw: string): string | null {
   const text = raw.trim();
   if (!/table/i.test(text) && !UUID.test(text)) return null;
   return text.match(UUID)?.[0].toLowerCase() ?? null;
+}
+
+/** True when a scanned code is an entrance tag (/v/<id> or …floor/<id>), so its id is a venue. */
+export function isFloorCode(raw: string): boolean {
+  return /\/(v|floor)\/[0-9a-f-]{36}/i.test(raw.trim());
 }
 
 /** "12:04" left, or null when untimed. */

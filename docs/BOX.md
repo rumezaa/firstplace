@@ -2,6 +2,8 @@
 
 Aaron's firmware ([AArellano101/first-place-embedded](https://github.com/AArellano101/first-place-embedded)) already speaks this API. This page is the checklist for wiring it to our server.
 
+For the NFC stickers and printed QR codes that open a table in the app, see [NFC_TAGS.md](NFC_TAGS.md).
+
 ## The contract
 
 ```

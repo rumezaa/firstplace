@@ -12,7 +12,7 @@ import { Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, 
 
 /**
  * The floor view (docs/specs/2026-11-08-floor-map-design.md). An NFC tag at the
- * entrance opens firstplace://floor/<venueId>: the whole floor at a glance,
+ * entrance opens <server>/v/<venueId>, which forwards to floor/<venueId>: the whole floor at a glance,
  * every table's live light. Pick one; from there it's the usual table flow.
  * Colours only, never who is sitting where.
  */

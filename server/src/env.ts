@@ -12,7 +12,11 @@ function num(name: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-const isProduction =process.env.NODE_ENV === 'production';
+function withTrailingSlash(base: string): string {
+  return base.endsWith('/') ? base : `${base}/`;
+}
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 export const env = {
   port: Number(process.env.PORT ?? 8787),
@@ -71,6 +75,15 @@ export const env = {
   // Background refresh of the default area, so open-now and ratings keep up.
   // 0 turns the job off.
   placesSyncMinutes: Number(process.env.PLACES_SYNC_MINUTES ?? 15),
+
+  // Where NFC/QR tag links (/t/<tableId>, /v/<venueId>) forward to. The tags
+  // hold a link to this server, so switching between a dev build
+  // (firstplace://) and Expo Go (exp://<laptop-ip>:8081/--/) is a change here,
+  // never a rewrite of the stickers.
+  appLinkBase: withTrailingSlash(process.env.APP_LINK_BASE?.trim() || 'firstplace://'),
+  // Optional: the deployed Expo web build. Set = the tag page also shows an
+  // "Open on the web" link.
+  webAppUrl: (process.env.WEB_APP_URL ?? '').trim().replace(/\/+$/, ''),
 
   corsOrigins: (process.env.CORS_ORIGINS ?? '*').split(',').map((o) => o.trim()),
 };

@@ -15,7 +15,9 @@ import * as AuthSession from 'expo-auth-session';
 
 export const AUTH0_DOMAIN = process.env.EXPO_PUBLIC_AUTH0_DOMAIN?.trim() ?? '';
 export const AUTH0_CLIENT_ID = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID?.trim() ?? '';
-export const AUTH0_AUDIENCE = process.env.EXPO_PUBLIC_AUTH0_AUDIENCE?.trim() ?? '';
+// Auth0 matches the API identifier exactly, and ours has no trailing slash, so
+// tolerate one pasted by mistake (it fails with "Service not found").
+export const AUTH0_AUDIENCE = (process.env.EXPO_PUBLIC_AUTH0_AUDIENCE?.trim() ?? '').replace(/\/+$/, '');
 
 export const AUTH0_AVAILABLE = Boolean(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE);
 

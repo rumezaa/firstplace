@@ -25,7 +25,8 @@ export const env = {
 
   // Auth0. When unset, only the dev login works (fine for local work).
   auth0Domain: process.env.AUTH0_DOMAIN ?? '',
-  auth0Audience: process.env.AUTH0_AUDIENCE ?? '',
+  // Must equal the Auth0 API identifier; a stray trailing slash would reject every token.
+  auth0Audience: (process.env.AUTH0_AUDIENCE ?? '').trim().replace(/\/+$/, ''),
 
   // Dev login: POST /dev/login issues a short-lived token for a seeded user, so
   // the demo never depends on Auth0. Off in production unless explicitly on.

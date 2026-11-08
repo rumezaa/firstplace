@@ -6,12 +6,14 @@ import { logger } from 'hono/logger';
 import { issueDevToken, optionalAuth, type AuthVars } from './auth.js';
 import { asSystem, asUser, pool } from './db.js';
 import { env } from './env.js';
+import { calgaryStatus, startCalgaryData } from './calgary.js';
 import { startJobs } from './jobs.js';
 import { actions } from './routes/actions.js';
 import { conversations } from './routes/conversations.js';
 import { hw } from './routes/hw.js';
 import { me } from './routes/me.js';
 import { meetups } from './routes/meetups.js';
+import { plans } from './routes/plans.js';
 import { venues } from './routes/venues.js';
 
 const app = new Hono<{ Variables: AuthVars }>();
@@ -21,7 +23,7 @@ app.use('*', cors({ origin: env.corsOrigins.includes('*') ? '*' : env.corsOrigin
 
 app.get('/health', async (c) => {
   const db = await pool.query('select 1').then(() => 'ok').catch(() => 'down');
-  return c.json({ ok: db === 'ok', db, auth0: Boolean(env.auth0Domain), gemini: Boolean(env.geminiApiKey) });
+  return c.json({ ok: db === 'ok', db, auth0: Boolean(env.auth0Domain), gemini: Boolean(env.geminiApiKey), calgary: calgaryStatus() });
 });
 
 // The hardware light authenticates with its own device key, not a user login.
@@ -42,6 +44,8 @@ if (env.devLogin) {
 }
 
 app.route('/venues', venues);
+// Before the routers below: their '*' requireAuth would otherwise cover /calgary/places.
+app.route('/', plans);
 
 /**
  * What a phone sees after tapping a box: the table, its venue and its light.
@@ -89,4 +93,5 @@ app.onError((err, c) => {
 serve({ fetch: app.fetch, port: env.port }, (info) => {
   console.log(`FirstPlace API on http://localhost:${info.port}`);
   startJobs();
+  void startCalgaryData();
 });

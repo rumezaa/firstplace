@@ -3,8 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import type { AuthVars } from '../auth.js';
 import { asUser } from '../db.js';
 import { env } from '../env.js';
-import { generate } from '../gemini.js';
 import { areaIsFresh, placesEnabled, syncArea, type Area } from '../places.js';
+import { ask, requester } from '../gemini.js';
 
 // Public venue data. Works signed out (as the `anon` role), so the map loads
 // before anyone has an account.
@@ -185,10 +185,16 @@ venues.get('/:id/vibe', async (c) => {
 
   // Cache per venue and per 10-minute slice, so the line tracks the live counts.
   const slice = Math.floor(Date.now() / 600_000);
-  const text = await generate(
+  const res = await ask(
     `vibe:${id}:${slice}`,
     `Write 2 short sentences describing what it is like inside this place right now, for someone ` +
       `nervous about walking in alone. Be concrete and friendly. Data (JSON): ${JSON.stringify(data)}`,
+    { who: requester(c) },
   );
-  return c.json({ vibe: text ?? data.venue.insider_info ?? null, generated: Boolean(text) });
+  return c.json({
+    vibe: res.text ?? data.venue.insider_info ?? null,
+    generated: Boolean(res.text),
+    aiStatus: res.status,
+    retryAfterSec: res.retryAfterSec ?? null,
+  });
 });

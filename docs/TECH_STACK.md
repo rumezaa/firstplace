@@ -85,8 +85,12 @@ If the server forgets a filter, the database still refuses.
 | Conversation openers | shared interests and the venue, **after mutual acceptance only** | 3 opener ideas |
 | Owner tip | the dashboard aggregates | one practical tip, e.g. "Tuesdays 2–4pm are quiet: try a study-hour deal" |
 | Meetup invitation | the finished plan: activity, venue, day, forecast, shared interests | one warm, low-pressure line to send |
+| Icebreaker questions | the shared overlap (interests, topics, languages) + 3 public places near the venue | 4 questions, at most one mentioning a nearby place |
+| Hangout plans | the shared overlap + 8 public places near where they met | 3 plans, each tied to a real place |
 
-Rate-limited per user, with responses cached in the database.
+**RAG on Calgary open data** (`server/src/calgary.ts`, `rag.ts`): once a day the server loads ~570 places from data.calgary.ca (recreation facilities, public art, library hours, community centres and attractions, regional and district parks), cached in `server/.cache/`. Each request retrieves the closest places that match the shared interests and gives only those to Gemini as a numbered CONTEXT block. Any plan citing a place that wasn't retrieved is dropped.
+
+**Guard rails** (`server/src/gemini.ts`, set in `.env`): per user (or per IP when signed out) 6 calls a minute and 60 a day; 30 a minute and 4 at once for the whole server; 8s per model attempt and a 15s overall deadline; SDK retries off; identical requests in flight share one call; answers cached in memory. A limit or timeout never errors: the endpoint returns fallback copy with `aiStatus` and `retryAfterSec`.
 
 Note the direction of travel on the meetup planner: Gemini is handed a plan that
 has already been decided and only writes the covering sentence. It does not pick

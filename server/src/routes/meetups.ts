@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { requireAuth, type AuthVars } from '../auth.js';
 import { asUser } from '../db.js';
 import { env } from '../env.js';
-import { generate } from '../gemini.js';
+import { ask } from '../gemini.js';
 import { buildPlan, type MeetupPlan, type SharedProfile, type Venue, type Window } from '../planner.js';
 import { CALGARY, fetchWeather, type FetchOptions, type WeatherReport } from '../weather.js';
 
@@ -174,7 +174,7 @@ async function invitationLine(
   const words = [...new Set([...(shared.interests ?? []), ...(shared.topics ?? [])])].slice(0, 5);
   const place = plan.venue?.name ?? plan.area ?? 'the usual place';
 
-  return generate(
+  const res = await ask(
     `meetup-invite:${meetupId}:${plan.idea.id}:${plan.day}:${plan.part}`,
     'Two people met once at a Calgary cafe conversation table and both said it went well. ' +
       'They are arranging a second, friendly meet-up. Write the short message one could send the ' +
@@ -183,8 +183,10 @@ async function invitationLine(
       `${words.length ? `Things they both like: ${words.join(', ')}. ` : ''}` +
       'Two sentences maximum, warm and low-pressure, easy to say no to, friendship not romance. ' +
       'Do not use any names or greetings with a name.',
-    6 * 60 * 60_000,
+    // Rate-limited per meetup, so one pair can't burn the shared Gemini quota.
+    { ttlMs: 6 * 60 * 60_000, who: `meetup:${meetupId}` },
   );
+  return res.text;
 }
 
 // ----------------------------------------------------------------- deciding --

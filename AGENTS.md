@@ -1,5 +1,7 @@
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
+**Reviewing or fixing this repo? Follow [docs/REVIEW_BRIEF.md](docs/REVIEW_BRIEF.md) first:** the design kit rules, privacy rules, edge cases and how to verify.
+
 ## Expo has changed — do not trust your training data
 
 Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:

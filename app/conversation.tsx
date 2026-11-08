@@ -212,17 +212,7 @@ function Vote({
   }
 
   if (c.connected) {
-    return (
-      <>
-        <Title>You&apos;re connected</Title>
-        <Card accent="sage" className="gap-2">
-          <Body>You both said it was a good conversation. {c.their_first_name ?? 'They'} is now in your People tab, where you can plan to meet again.</Body>
-        </Card>
-        <Button label={`See ${c.their_first_name ?? 'them'} in People`} onPress={onConnected} />
-        <Button label="Back to the map" variant="quiet" onPress={onDone} />
-        {reportLink}
-      </>
-    );
+    return <Connected c={c} onConnected={onConnected} onDone={onDone} reportLink={reportLink} />;
   }
 
   if (c.my_vote) {
@@ -296,6 +286,38 @@ function ReportForm({ conversationId, onDone, onCancel }: { conversationId: stri
         onPress={() => reason && run('report', () => reportUser(conversationId, reason, note || undefined))} />
       <Button label="Just block them" variant="quiet" busy={busy === 'block'} onPress={() => run('block', async () => { await blockUser(conversationId); await endConversation(); })} />
       <Button label="Cancel" variant="quiet" onPress={onCancel} />
+    </>
+  );
+}
+
+/** Both said good: show it for a moment, then go to People on both phones. */
+function Connected({
+  c,
+  onConnected,
+  onDone,
+  reportLink,
+}: {
+  c: Conversation;
+  onConnected: () => void;
+  onDone: () => void;
+  reportLink: React.ReactNode;
+}) {
+  useEffect(() => {
+    const t = setTimeout(onConnected, 2500);
+    return () => clearTimeout(t);
+  }, [onConnected]);
+  return (
+    <>
+      <Title>You&apos;re connected</Title>
+      <Card className="gap-2">
+        <Body>
+          You both said it was a good conversation. Taking you to People, where {c.their_first_name ?? 'they'} now
+          is and you can plan to meet again.
+        </Body>
+      </Card>
+      <Button label={`See ${c.their_first_name ?? 'them'} in People`} onPress={onConnected} />
+      <Button label="Back to the map" variant="quiet" onPress={onDone} />
+      {reportLink}
     </>
   );
 }

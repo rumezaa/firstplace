@@ -13,6 +13,7 @@ import { ApiNotConfigured, Loading, Screen } from '@/components/ui';
 import { apiConfigProblem, isApiConfigured } from '@/lib/api';
 import { colors } from '@/lib/theme';
 import { HelpButton } from '@/components/HelpButton';
+import { ConversationWatcher } from '@/components/ConversationWatcher';
 
 export default function RootLayout() {
   // Bundled with the app, so this resolves almost instantly; until then (or if
@@ -82,6 +83,8 @@ function RootNavigator() {
     </Stack>
     {/* PRD: a Help button in the same place on every screen, signed in or not. */}
     <HelpButton />
+    {/* Someone said hi at your table: open the conversation on your phone too. */}
+    <ConversationWatcher />
     </View>
   );
 }

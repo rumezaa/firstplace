@@ -4,6 +4,12 @@ export interface AsyncState<T> {
   data: T | null;
   error: Error | null;
   loading: boolean;
+  /**
+   * True once the first load has finished, success or not. Use this instead of
+   * `loading && !data` when the answer can legitimately be null (e.g. "no
+   * conversation"), so background refreshes never flash a spinner again.
+   */
+  settled: boolean;
   /** Re-runs the loader. Safe to pass straight to a RefreshControl. */
   reload: () => Promise<void>;
 }
@@ -20,6 +26,7 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[] = []): Asy
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
+  const [settled, setSettled] = useState(false);
 
   const mounted = useRef(true);
   const generation = useRef(0);
@@ -49,18 +56,21 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[] = []): Asy
     } catch (e) {
       if (mounted.current && request === generation.current) setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
-      if (mounted.current && request === generation.current) setLoading(false);
+      if (mounted.current && request === generation.current) {
+        setLoading(false);
+        setSettled(true);
+      }
     }
   }, [run]);
 
   useEffect(() => {
     let cancelled = false;
     void Promise.resolve().then(() => {
-      if (!cancelled) { setData(null); void reload(); }
+      if (!cancelled) { setData(null); setSettled(false); void reload(); }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { cancelled = true; generation.current++; };
   }, [reload]);
 
-  return { data, error, loading, reload };
+  return { data, error, loading, settled, reload };
 }

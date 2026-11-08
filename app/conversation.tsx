@@ -39,11 +39,13 @@ export default function ConversationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
 
-  if (conv.loading && !conv.data) return <Screen><Loading label="Joining the conversation" /></Screen>;
+  // Only the very first load shows a spinner; "no conversation" (null) is an answer, not a wait.
+  if (!conv.settled) return <Screen><Loading label="Joining the conversation" /></Screen>;
   if (conv.error) return <Screen><ErrorNote error={conv.error} onRetry={reload} /></Screen>;
   if (!conv.data) {
     return (
       <Screen>
+        <Stack.Screen options={{ title: '' }} />
         <Title>No conversation right now</Title>
         <Body>Find a green light and say hi to start one.</Body>
         <Button label="Back" onPress={() => router.replace('/')} />

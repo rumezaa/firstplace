@@ -5,7 +5,7 @@ import { APP_NAME } from '@/lib/branding';
 import { colors } from '@/lib/theme';
 
 /**
- * The FirstPlace mark: the box itself, three lamps with the bottom one lit
+ * The ChatterBox mark: the box itself, three lamps with the bottom one lit
  * green ("open to talk"). Same proportions as the app icon (design kit v2).
  */
 export function AppIcon({ size = 32 }: { size?: number }) {

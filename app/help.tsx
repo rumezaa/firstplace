@@ -79,7 +79,7 @@ export default function Help() {
             left === 'done'
               ? 'Your light is off. Nobody was told why.'
               : left === 'offline'
-                ? "Couldn't reach FirstPlace. Just walk away; your table frees itself."
+                ? "Couldn't reach ChatterBox. Just walk away; your table frees itself."
                 : session
                   ? 'Check out and turn your light off'
                   : 'Not signed in, so nothing to check out of'

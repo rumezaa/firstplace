@@ -19,7 +19,7 @@ export default function KioskScreen() {
   const rows = (tables.data ?? []).filter(t => t.is_chat_table);
   return <Screen>
     <Title>{venue.data?.name ?? 'Conversation tables'}</Title>
-    <Body>Scan a table’s code in the FirstPlace app to claim it or join a conversation.</Body>
+    <Body>Scan a table’s code in the ChatterBox app to claim it or join a conversation.</Body>
     {venue.error ? <ErrorNote error={venue.error} onRetry={() => void venue.reload()} /> : null}
     {!venue.loading && !venue.error && !venue.data ? <Body>This place is not available.</Body> : null}
     {tables.error ? <ErrorNote error={tables.error} onRetry={() => void tables.reload()} /> : null}

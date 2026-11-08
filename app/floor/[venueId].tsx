@@ -18,7 +18,7 @@ import { Body, Button, Caption, Card, ErrorNote, Loading, Screen, SectionTitle, 
  * Colours only, never who is sitting where.
  */
 const DOT: Record<BoxLight, string> = { green: colors.go, yellow: colors.ask, red: colors.stop, off: '#B9BCB8' };
-const CHIP: Record<BoxLight, string> = { green: 'Say hi', yellow: 'Ask first', red: 'Not now', off: 'Just a table' };
+const CHIP: Record<BoxLight, string> = { green: 'Say hi', yellow: 'Free seat', red: 'Not now', off: 'Off' };
 
 export default function FloorScreen() {
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
@@ -43,9 +43,9 @@ export default function FloorScreen() {
   const counts: Record<BoxLight, number> = { green: 0, yellow: 0, red: 0, off: 0 };
   for (const t of tables) counts[t.light] += 1;
   const summary =
-    [counts.green ? `${counts.green} open to talk` : '', counts.yellow ? `${counts.yellow} asking first` : '']
+    [counts.green ? `${counts.green} open to talk` : '', counts.yellow ? `${counts.yellow} free ${counts.yellow === 1 ? 'seat' : 'seats'}` : '']
       .filter(Boolean)
-      .join(' · ') || 'No open lights right now';
+      .join(' · ') || 'No free seats or open lights right now';
 
   const selected = tables.find((t) => t.id === selectedId) ?? null;
   const open = (t: FloorTable) => router.push(`/table/${t.id}`);
@@ -101,7 +101,7 @@ export default function FloorScreen() {
       {selected ? <TableSheet table={selected} onOpen={() => open(selected)} /> : null}
 
       {tables.length ? <SectionTitle>Tables on this floor</SectionTitle> : null}
-      {loaded && tables.length === 0 ? <Body>No FirstPlace tables on this floor yet.</Body> : null}
+      {loaded && tables.length === 0 ? <Body>No ChatterBox tables on this floor yet.</Body> : null}
       {tables.map((t) => (
         <Pressable
           key={t.id}
@@ -192,7 +192,7 @@ function FloorMap({
 }
 
 /**
- * The traced building in FirstPlace's palette: a soft shadow, white floor,
+ * The traced building in ChatterBox's palette: a soft shadow, white floor,
  * rooms in warm grey separated by white gaps instead of lines, corridors in a pale teal wash, stairs and elevators in
  * the accent, washrooms muted. Area names sit on top, quietly.
  */
@@ -318,10 +318,8 @@ function TableSheet({ table, onOpen }: { table: FloorTable; onOpen: () => void }
     : table.light === 'green'
       ? 'Go to this table'
       : table.light === 'yellow'
-        ? 'Ask to join'
-        : table.light === 'off'
-          ? 'Sit here'
-          : null;
+        ? 'Take this seat'
+        : null;
   return (
     <Card className="gap-2">
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

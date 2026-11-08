@@ -13,9 +13,9 @@ import { useAsync } from '@/hooks/useAsync';
 import { Body, Button, Caption, Card, Screen, SectionTitle, Title } from '@/components/ui';
 
 /**
- * Tap or scan a FirstPlace box. The box's NFC tag and printed QR both hold a
+ * Tap or scan a ChatterBox box. The box's NFC tag and printed QR both hold a
  * link with its table id; either one opens that table's screen, where you
- * claim it, join on green or request on yellow.
+ * take it if it's yellow (free), or join on green.
  */
 export default function CheckinScreen() {
   const router = useRouter();
@@ -98,7 +98,7 @@ function Scanner({ onTable }: { onTable: (id: string) => void }) {
         <Button label="Scan a code" onPress={() => void start()} />
         {permission && !permission.granted && !permission.canAskAgain ? (
           <Caption>
-            Camera access is off for FirstPlace. Turn it on in Settings, or pick the place below.
+            Camera access is off for ChatterBox. Turn it on in Settings, or pick the place below.
           </Caption>
         ) : null}
       </View>
@@ -128,7 +128,7 @@ function Scanner({ onTable }: { onTable: (id: string) => void }) {
           />
         ) : null}
       </View>
-      <Caption>{wrongCode ? "That isn't a FirstPlace code. Try the one on the box." : 'Point at the code on the side of the box.'}</Caption>
+      <Caption>{wrongCode ? "That isn't a ChatterBox code. Try the one on the box." : 'Point at the code on the side of the box.'}</Caption>
       <Button label="Cancel" variant="quiet" onPress={() => setOpen(false)} />
     </Card>
   );

@@ -45,7 +45,7 @@ export default function ConversationScreen() {
     return (
       <Screen>
         <Title>No conversation right now</Title>
-        <Body>Tap a box with a green or yellow light to start one.</Body>
+        <Body>Find a green light and say hi to start one.</Body>
         <Button label="Back" onPress={() => router.replace('/')} />
       </Screen>
     );

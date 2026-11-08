@@ -36,17 +36,13 @@ check(req('GET', '/hw/tables/bad/state', key='wrong')[0] == 401, 'wrong device k
 check(req('GET', '/hw/tables/bad/state', key='local-test-device')[0] == 400, 'malformed hardware id')
 check(req('GET', '/hw/tables/00000000-0000-0000-0000-000000000000/state', key='local-test-device')[0] == 404, 'unknown hardware id')
 check(req('POST', path + '/claim', {'light': 'yellow'}, tokens['sam'])[0] == 200, 'claim')
-with concurrent.futures.ThreadPoolExecutor() as pool:
-    answers = list(pool.map(lambda _: req('POST', path + '/request', token=tokens['maya']), range(2)))
-check(all(s == 200 for s, _ in answers) and answers[0][1]['request_id'] == answers[1][1]['request_id'], 'concurrent duplicate requests reuse one request')
-rid = answers[0][1]['request_id']
-check(req('POST', '/requests/' + rid + '/respond', {'accept': 'false'}, tokens['sam'])[0] == 400, 'string false cannot accept')
+# Asking in the app was retired with migration 190 (yellow = free seat).
+check(req('POST', path + '/request', token=tokens['maya'])[0] == 400, 'requests are retired: yellow now means a free seat')
 req('POST', '/me/light', {'light': 'green'}, tokens['sam'])
 with concurrent.futures.ThreadPoolExecutor() as pool:
     answers = list(pool.map(lambda name: req('POST', path + '/join', token=tokens[name]), ('maya', 'jordan')))
 check(sorted(s for s, _ in answers) == [200, 400], 'simultaneous joins produce one conversation and one unavailable')
-check(req('POST', '/requests/' + rid + '/respond', {'accept': True}, tokens['sam'])[0] == 400, 'old request cannot start a second conversation')
 check(req('GET', '/hw/tables/' + table + '/state', key='local-test-device')[1]['light'] == 'red', 'live conversation stays red')
 for token in tokens.values(): req('POST', '/me/leave-now', token=token)
-check(req('GET', '/hw/tables/' + table + '/state', key='local-test-device')[1]['light'] == 'off', 'leave fails closed')
+check(req('GET', '/hw/tables/' + table + '/state', key='local-test-device')[1]['light'] == 'yellow', 'everyone left: the seat shows free (yellow)')
 print('ALL PASS')

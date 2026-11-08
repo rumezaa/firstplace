@@ -17,12 +17,12 @@ const PAGES: { light: BoxLight; title: string; body: string }[] = [
   {
     light: 'green',
     title: 'See who’s open to talk',
-    body: 'Every FirstPlace table has a small light. It tells you, at a glance, whether the person sitting there is happy to chat.',
+    body: 'Every ChatterBox table has a small light. It tells you, at a glance, whether the person sitting there is happy to chat.',
   },
   {
     light: 'yellow',
     title: 'Three colours, no guessing',
-    body: 'Green: walk over and say hi. Yellow: ask in the app first. Red: not right now. You choose yours when you sit down.',
+    body: 'Green: someone’s open to talk, say hi. Red: they’d rather not right now. Yellow: the seat is free, take it.',
   },
   {
     light: 'off',

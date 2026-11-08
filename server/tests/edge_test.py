@@ -51,7 +51,7 @@ light = lambda t: req('GET', f'/hw/tables/{t}/state', key=KEY)[1]['light']
 
 # ---------------------------------------------------------------- floor ---
 s, fl = req('GET', f'/venues/{FLOOR}/floor')
-ok(s == 200 and len(fl) == 3 and all(t['light'] == 'off' for t in fl), 'signed-out floor: three tables, all off')
+ok(s == 200 and len(fl) == 16 and all(t['light'] == 'off' for t in fl), 'signed-out floor: all 16 tables, all off')
 ok(all(set(t) == {'id', 'label', 'seats', 'is_chat_table', 'box_enabled', 'light', 'mine', 'pos_x', 'pos_y'} for t in fl),
    'floor never exposes who sits where (only colour fields)')
 s, fl = req('GET', '/venues/00000000-0000-4000-8000-000000000000/floor')
@@ -60,7 +60,7 @@ ok(s == 200 and fl == [], 'unknown floor is an empty list, not an error')
 req('POST', f'/tables/{WIN}/claim', {'light': 'green'}, T['priya'])
 mine = {t['label']: t['mine'] for t in req('GET', f'/venues/{FLOOR}/floor', tok=T['priya'])[1]}
 other = {t['label']: t['mine'] for t in req('GET', f'/venues/{FLOOR}/floor', tok=T['wei'])[1]}
-ok(mine['Window table'] and not other['Window table'], '"mine" is true only for the person holding the table')
+ok(mine['354 · Window'] and not other['354 · Window'], '"mine" is true only for the person holding the table')
 ok(light(WIN) == 'green', 'floor claim shows on the box')
 
 # ------------------------------------------------------- signed out ------

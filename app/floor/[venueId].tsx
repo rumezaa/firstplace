@@ -132,7 +132,7 @@ function FloorMap({
         aspectRatio: layout.aspect,
         width: '100%',
         // Phone-sized on laptops and tablets too, so the whole floor fits on screen.
-        maxWidth: 420,
+        maxWidth: 440,
         alignSelf: 'center',
         borderRadius: 16,
         borderWidth: 1,
@@ -141,19 +141,20 @@ function FloorMap({
         overflow: 'hidden',
       }}
     >
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, backgroundColor: colors.claySoft }} />
-      <Text style={{ position: 'absolute', top: 10, left: 0, right: 0, textAlign: 'center', fontSize: 11, color: colors.mocha }}>
-        Windows
-      </Text>
+      {/* West windows along the left edge; north arrow top right */}
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 5, backgroundColor: colors.claySoft }} />
+      <Text style={{ position: 'absolute', top: 6, right: 8, fontSize: 11, fontWeight: '700', color: colors.mocha }}>N ↑</Text>
       <View
-        style={{ position: 'absolute', top: '6%', bottom: 0, left: pct(layout.corridor.x), width: pct(layout.corridor.w), backgroundColor: colors.cream }}
+        style={{ position: 'absolute', top: 0, bottom: 0, left: pct(layout.corridor.x), width: pct(layout.corridor.w), backgroundColor: colors.cream }}
       />
       {layout.zones.map((z) => (
         <View
           key={z.label}
           style={{ position: 'absolute', left: pct(z.x), top: pct(z.y), width: pct(z.w), height: pct(z.h), borderRadius: 10, backgroundColor: colors.sunk }}
         >
-          <Text style={{ position: 'absolute', bottom: 6, left: 8, fontSize: 11, color: colors.mocha }}>{z.label}</Text>
+          <Text style={{ position: 'absolute', bottom: 4, left: 6, right: 4, fontSize: 10, color: colors.mocha }} numberOfLines={1}>
+            {z.label}
+          </Text>
         </View>
       ))}
       <View
@@ -199,6 +200,7 @@ function TableMarker({ table, x, y, selected, onPress }: { table: FloorTable; x:
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={4}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={`${table.label}${table.mine ? ', your table' : ''}, ${LIGHT_INFO[table.light].label}`}
@@ -208,7 +210,7 @@ function TableMarker({ table, x, y, selected, onPress }: { table: FloorTable; x:
         marginTop: -22,
         minHeight: 44,
         alignItems: 'center',
-        gap: 4,
+        gap: 0,
         // Labels on the right half go to the left of the dot so they never clip.
         ...(flip
           ? { right: `${(1 - x) * 100}%`, marginRight: -22, flexDirection: 'row-reverse' }
@@ -230,13 +232,10 @@ function TableMarker({ table, x, y, selected, onPress }: { table: FloorTable; x:
           }}
         />
       </View>
-      <View style={{ alignItems: flip ? 'flex-end' : 'flex-start' }}>
-        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.espresso }}>
-          {table.label}
-          {table.mine ? ' · you' : ''}
-        </Text>
-        <Text style={{ fontSize: 11, color: colors.mocha }}>{CHIP[table.light]}</Text>
-      </View>
+      {/* Short room code on the map; the full name and meaning are in the card and list. */}
+      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.espresso }}>
+        {table.mine ? 'You' : table.label.split(' · ')[0]}
+      </Text>
     </Pressable>
   );
 }

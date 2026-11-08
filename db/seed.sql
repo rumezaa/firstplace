@@ -459,3 +459,22 @@ select least(seated_user, joiner_user), greatest(seated_user, joiner_user), id,
        now() - interval '6 days'
 from conv
 on conflict (user_a, user_b) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- 7. TFDL floor 3 demo students (also in 150_tfdl_floor3.sql; section 0 clears
+--    seeded users, so they are re-added here). See server/scripts/demo_floor.py.
+-- ---------------------------------------------------------------------------
+-- Demo students to fill the floor (dev login only: auth0_sub 'seed|…').
+insert into public.users (id, auth0_sub, name, interests, vibe_tags, incognito, familiar_faces_opt_in, created_at)
+select md5('floor3:' || n)::uuid, 'seed|' || e, n, i, array['quiet'], false, true, now() - interval '30 days'
+from (values
+  ('Amara', 'amara@thirdplace.test', array['chemistry', 'running']),
+  ('Ben',   'ben@thirdplace.test',   array['history', 'board games']),
+  ('Chloe', 'chloe@thirdplace.test', array['design', 'hiking']),
+  ('Dev',   'dev@thirdplace.test',   array['engineering', 'chess']),
+  ('Elena', 'elena@thirdplace.test', array['nursing', 'coffee']),
+  ('Farid', 'farid@thirdplace.test', array['economics', 'soccer']),
+  ('Grace', 'grace@thirdplace.test', array['biology', 'photography']),
+  ('Hiro',  'hiro@thirdplace.test',  array['computer science', 'music'])
+) as s(n, e, i)
+on conflict (auth0_sub) do nothing;

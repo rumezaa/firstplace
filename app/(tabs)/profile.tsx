@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, TextInput, View } from 'react-native';
 
-import { APP_NAME } from '@/lib/branding';
 import { fetchCheckinHistory } from '@/lib/checkins';
 import { relativeDay, timeOfDay } from '@/lib/format';
 import { errorMessage } from '@/lib/api';
@@ -105,8 +104,7 @@ export default function ProfileScreen() {
       <Card className="gap-3">
         <SectionTitle>Name</SectionTitle>
         <Caption>
-          Only ever shown to someone you have both said yes to in familiar faces. We show the first
-          name only.
+          Only your first name, and only to people you&apos;ve both said yes to.
         </Caption>
         <TextInput
           value={nameValue}
@@ -124,7 +122,7 @@ export default function ProfileScreen() {
 
       <Card className="gap-3">
         <SectionTitle>Interests</SectionTitle>
-        <Caption>Used to suggest places, never shown next to your name.</Caption>
+        <Caption>Others only see the ones you share.</Caption>
         <View className="flex-row flex-wrap gap-2">
           {Array.from(new Set([...profile.interests, ...INTEREST_SUGGESTIONS])).map((interest) => (
             <Chip
@@ -139,7 +137,7 @@ export default function ProfileScreen() {
 
       <Card className="gap-3">
         <SectionTitle>Topics you like</SectionTitle>
-        <Caption>People only ever see the ones you share with them.</Caption>
+        <Caption>Others only see the ones you share.</Caption>
         <View className="flex-row flex-wrap gap-2">
           {Array.from(new Set([...(extra.topics ?? []), ...TOPIC_SUGGESTIONS])).map((topic) => (
             <Chip
@@ -154,7 +152,7 @@ export default function ProfileScreen() {
 
       <Card className="gap-3">
         <SectionTitle>Languages</SectionTitle>
-        <Caption>Shown to the person you&apos;re talking with.</Caption>
+        <Caption>Shared ones are shown when you talk.</Caption>
         <View className="flex-row flex-wrap gap-2">
           {Array.from(new Set([...(extra.languages ?? []), ...LANGUAGE_SUGGESTIONS])).map((lang) => (
             <Chip
@@ -170,8 +168,7 @@ export default function ProfileScreen() {
       <Card className="gap-3">
         <SectionTitle>Your vibe</SectionTitle>
         <Caption>
-          These feed the aggregated &quot;who tends to be here&quot; on venue screens. A tag is only
-          ever shown once at least three people there share it.
+          Shown on venues only as a group, once three or more people share a tag.
         </Caption>
         <View className="flex-row flex-wrap gap-2">
           {Array.from(new Set([...profile.vibe_tags, ...VIBE_SUGGESTIONS])).map((tag) => (
@@ -261,8 +258,7 @@ export default function ProfileScreen() {
       <Card className="gap-3">
         <SectionTitle>Kiosk mode</SectionTitle>
         <Caption>
-          For cafe staff. Turns a tablet into the {APP_NAME} kiosk: a rotating QR code and a table
-          grid you can tap to mark tables open or taken.
+          Turns a tablet into the counter display for a venue.
         </Caption>
         <Button
           label="Open kiosk mode"
@@ -273,10 +269,6 @@ export default function ProfileScreen() {
           }}
           disabled={!venues.data?.length}
         />
-        <Caption>
-          Opens the first venue in the list. TODO(kiosk): let staff pick which venue, or remember
-          the one this tablet belongs to.
-        </Caption>
       </Card>
 
       <Button label="Sign out" variant="danger" onPress={() => void signOut()} />

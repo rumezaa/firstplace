@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { RefreshControl, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { AVAILABILITY, tablesSummary } from '@/lib/availability';
-import { hourLabel, people } from '@/lib/format';
+import { hourLabel } from '@/lib/format';
 import {
   fetchBusyHours,
   fetchCrowdTags,
@@ -95,11 +96,6 @@ export default function VenueScreen() {
         {v.address ? <Caption>{v.address}</Caption> : null}
       </View>
 
-      {FLOOR_LAYOUTS[v.id] ? (
-        // Same screen the NFC tag at the entrance opens.
-        <Button label="See the floor" onPress={() => router.push(`/floor/${v.id}`)} />
-      ) : null}
-
       {live.error ? <ErrorNote error={live.error} onRetry={() => void live.reload()} /> : null}
       <View className="flex-row flex-wrap items-center gap-2">
         <Badge
@@ -110,55 +106,38 @@ export default function VenueScreen() {
         {l?.chat_table_active ? <Badge label="Chat table active" tone="chat" /> : null}
         {v.is_quiet ? <Badge label="Quiet" /> : null}
         {v.good_for_groups ? <Badge label="Good for groups" /> : null}
-        <Badge label={v.type === 'study' ? 'Study space' : v.type === 'cafe' ? 'Cafe' : 'Social space'} />
       </View>
 
-      {vibeText ? (
-        <Card className="gap-2">
-          <SectionTitle>What it&apos;s like right now</SectionTitle>
-          <Body>{vibeText}</Body>
-        </Card>
-      ) : null}
+      {vibeText ? <Body className="text-espresso text-[18px] leading-[26px]">{vibeText}</Body> : null}
 
-      {/* The headline social signal. Deliberately a count and nothing more --
-          never a list of who, never a location within the room. */}
-      <Card accent={openToChat > 0 ? 'berry' : undefined} className="gap-2">
-        <SectionTitle>Open to chat right now</SectionTitle>
-        <Body>
-          {!l ? 'Live information is unavailable. Try refreshing.' : openToChat === 0
-            ? 'Nobody has flagged themselves as open to chat yet. You could be the first.'
-            : `${people(openToChat)} here said they are happy to be talked to.`}
-        </Body>
-        <Caption>We only ever show the number, never who.</Caption>
-      </Card>
+      {/* The headline social signal: counts only, never who or where. */}
+      <View className="flex-row gap-3">
+        <Stat value={l ? String(openToChat) : '–'} label="open to chat" />
+        <Stat value={l ? `${l.open_tables}/${l.total_tables}` : '–'} label="tables free" />
+      </View>
 
-      {v.insider_info ? (
-        <Card accent="clay" className="gap-2">
-          <SectionTitle>Insider info</SectionTitle>
-          <Body>{v.insider_info}</Body>
-        </Card>
-      ) : null}
+      {FLOOR_LAYOUTS[v.id] ? (
+        // Same screen the NFC tag at the entrance opens.
+        <Button label="See the floor" onPress={() => router.push(`/floor/${v.id}`)} />
+      ) : (
+        <Button label="Find a table" onPress={() => router.push('/checkin')} />
+      )}
 
-      {v.popular_drinks.length > 0 ? (
-        <Card className="gap-2">
-          <SectionTitle>What people order</SectionTitle>
-          <Body>{v.popular_drinks.join(' · ')}</Body>
-        </Card>
-      ) : null}
-
-      {/* Crowd type, aggregated. The view suppresses any tag held by fewer than
-          3 recent visitors, so a tag here never describes one person. */}
-      {crowd.data && crowd.data.length > 0 ? (
-        <Card className="gap-2">
-          <SectionTitle>Who tends to be here</SectionTitle>
-          <View className="flex-row flex-wrap gap-2">
-            {crowd.data.map((tag) => (
-              <Badge key={tag.tag} label={`${tag.tag} · ${tag.people}`} />
-            ))}
-          </View>
-          <Caption>
-            Grouped from regulars&apos; own tags. Tags shared by fewer than three people are not shown.
-          </Caption>
+      {v.insider_info || v.popular_drinks.length > 0 || (crowd.data && crowd.data.length > 0) ? (
+        <Card className="gap-4">
+          {v.insider_info ? <Detail label="Good to know" text={v.insider_info} /> : null}
+          {v.popular_drinks.length > 0 ? <Detail label="People order" text={v.popular_drinks.join(' · ')} /> : null}
+          {/* Aggregated: the view hides any tag held by fewer than 3 recent visitors. */}
+          {crowd.data && crowd.data.length > 0 ? (
+            <View className="gap-2">
+              <Caption>Who tends to be here</Caption>
+              <View className="flex-row flex-wrap gap-2">
+                {crowd.data.map((tag) => (
+                  <Badge key={tag.tag} label={tag.tag} />
+                ))}
+              </View>
+            </View>
+          ) : null}
         </Card>
       ) : null}
 
@@ -177,7 +156,6 @@ export default function VenueScreen() {
       {hours.length > 0 ? (
         <Card className="gap-3">
           <SectionTitle>Busiest hours</SectionTitle>
-          <Caption>Check-ins over the last 60 days, local time.</Caption>
           <View className="gap-2">
             {hours.map((h) => (
               <View key={h.hour_of_day} className="flex-row items-center gap-3">
@@ -194,14 +172,6 @@ export default function VenueScreen() {
         </Card>
       ) : null}
 
-      <Card className="gap-3">
-        <SectionTitle>Going in?</SectionTitle>
-        <Body>
-          Tap your phone on the box at any conversation table, or scan the code on its side. Green
-          means say hi; yellow means ask in the app.
-        </Body>
-        <Button label="Find a table" onPress={() => router.push('/checkin')} />
-      </Card>
 
       <Button
         label="Owner dashboard"
@@ -210,5 +180,25 @@ export default function VenueScreen() {
         onPress={() => router.push(`/dashboard/${v.id}`)}
       />
     </Screen>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <Card className="flex-1 gap-0.5">
+      <Text display className="text-espresso text-[28px] leading-[32px] font-bold">
+        {value}
+      </Text>
+      <Caption>{label}</Caption>
+    </Card>
+  );
+}
+
+function Detail({ label, text }: { label: string; text: string }) {
+  return (
+    <View className="gap-1">
+      <Caption>{label}</Caption>
+      <Body className="text-espresso">{text}</Body>
+    </View>
   );
 }

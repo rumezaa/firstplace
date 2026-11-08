@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/Text';
 
 import { errorMessage } from '@/lib/api';
 import {
@@ -70,7 +71,7 @@ export default function TableScreen() {
 
   const { table, light, mine } = view.data;
   const stateLine =
-    light === 'off' ? 'Just a table right now' : `${LIGHT_INFO[light].label} · ${LIGHT_INFO[light].meaning.toLowerCase()}`;
+    light === 'off' ? 'Just a table right now' : `${LIGHT_INFO[light].label}: ${LIGHT_INFO[light].meaning}`;
 
   return (
     <Screen>
@@ -164,9 +165,6 @@ export default function TableScreen() {
         </>
       )}
 
-      <Caption className="mt-6">
-        Anyone can sit here. Off: just a table. Green: say hi. Yellow: ask in the app. Red: please don&apos;t disturb.
-      </Caption>
     </Screen>
   );
 }

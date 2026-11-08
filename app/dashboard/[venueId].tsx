@@ -2,11 +2,11 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
 
 import { hourLabel } from '@/lib/format';
-import { fetchVenueDashboard } from '@/lib/kiosk';
+import { fetchDashboardInsight, fetchVenueDashboard } from '@/lib/kiosk';
+import { Text } from '@/components/Text';
 import { fetchVenue } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import {
-  Badge,
   Body,
   Caption,
   Card,
@@ -78,34 +78,15 @@ export default function DashboardScreen() {
       {data && !data.suppressed ? (
         <>
           <View className="flex-row gap-3">
-            <StatTile label="Visitors" value={String(data.visitors)} />
-            <StatTile label="Visits" value={String(data.total_visits)} />
+            <StatTile label="visitors" value={String(data.visitors)} />
+            <StatTile label="visits" value={String(data.total_visits)} />
+          </View>
+          <View className="flex-row gap-3">
+            <StatTile label="came back" value={`${Math.round(data.repeat_visit_rate * 100)}%`} />
+            <StatTile label="chat table check-ins" value={String(data.chat_table_visits)} />
           </View>
 
-          <Card className="gap-3">
-            <SectionTitle>Repeat visits</SectionTitle>
-            <ProgressBar
-              fraction={data.repeat_visit_rate}
-              label={`Repeat visit rate ${Math.round(data.repeat_visit_rate * 100)} percent`}
-            />
-            <Body>
-              {Math.round(data.repeat_visit_rate * 100)}% of visitors came back more than once.
-            </Body>
-            <Caption>The share of people who returned, not who they are.</Caption>
-          </Card>
-
-          <Card accent="berry" className="gap-3">
-            <SectionTitle>Chat table</SectionTitle>
-            <View className="flex-row flex-wrap gap-2">
-              <Badge label={`${data.chat_table_visits} chat table check-ins`} tone="chat" />
-              <Badge label={`${data.open_to_chat_visits} open to chat`} tone="chat" />
-            </View>
-            <Body>
-              {data.chat_table_visits === 0
-                ? 'Nobody has used the chat table in this window. It may need a clearer sign.'
-                : 'People are choosing the chat table, which is the point of the whole thing.'}
-            </Body>
-          </Card>
+          <Tip venueId={venueId} />
 
           {data.peak_hours.length > 0 ? (
             <Card className="gap-3">
@@ -132,23 +113,33 @@ export default function DashboardScreen() {
         </>
       ) : null}
 
-      <Card className="gap-2">
-        <SectionTitle>What you will never see here</SectionTitle>
-        <Caption>
-          Who visited, who is in right now, which table anyone sat at, or anything about a single
-          customer. Anyone who has turned on incognito is left out of these numbers entirely. The
-          database enforces all of this, not the app.
-        </Caption>
-      </Card>
+      <Caption>
+        Never shown: who visited, who is here now, or where anyone sat. Incognito visits aren&apos;t
+        counted. The database enforces this, not the app.
+      </Caption>
     </Screen>
   );
 }
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="flex-1 gap-1">
+    <Card className="flex-1 gap-0.5">
+      <Text display className="text-espresso text-[30px] leading-[34px] font-bold">
+        {value}
+      </Text>
       <Caption>{label}</Caption>
-      <Body className="text-espresso text-3xl font-bold">{value}</Body>
+    </Card>
+  );
+}
+
+/** One Gemini idea from the same anonymous numbers. Hidden if there isn't one. */
+function Tip({ venueId }: { venueId: string }) {
+  const tip = useAsync(() => fetchDashboardInsight(venueId).catch(() => null), [venueId]);
+  if (!tip.data) return null;
+  return (
+    <Card className="bg-clay-soft gap-1">
+      <Caption className="text-clay">Idea for you</Caption>
+      <Body className="text-espresso">{tip.data}</Body>
     </Card>
   );
 }

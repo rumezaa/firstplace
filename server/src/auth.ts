@@ -39,13 +39,21 @@ async function subjectFromToken(token: string): Promise<{ sub: string; name?: st
   }
 }
 
-// auth0_sub -> users.id. Users never change id, so caching is safe.
-const userIdCache = new Map<string, string>();
+// auth0_sub -> users.id, remembered for a minute to save a query per request.
+// Short-lived on purpose: an account can be deleted (e.g. a reset), and a
+// remembered id would then point every request at a user that no longer exists.
+const CACHE_MS = 60_000;
+const userIdCache = new Map<string, { id: string; at: number }>();
+
+/** Forget a cached account, e.g. after the user row was deleted. */
+export function forgetUser(sub: string) {
+  userIdCache.delete(sub);
+}
 
 /** Find or create the public.users row for an Auth0 subject. */
 async function provisionUser(sub: string, name?: string): Promise<string> {
   const cached = userIdCache.get(sub);
-  if (cached) return cached;
+  if (cached && Date.now() - cached.at < CACHE_MS) return cached.id;
 
   const id = await asSystem(async (db) => {
     const found = await db.query<{ id: string }>('select id from public.users where auth0_sub = $1', [sub]);
@@ -59,7 +67,7 @@ async function provisionUser(sub: string, name?: string): Promise<string> {
     return created.rows[0].id;
   });
 
-  userIdCache.set(sub, id);
+  userIdCache.set(sub, { id, at: Date.now() });
   return id;
 }
 

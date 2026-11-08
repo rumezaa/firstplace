@@ -4,6 +4,14 @@ import { pgConfig } from './pgConfig.js';
 
 export const pool = new pg.Pool({ ...pgConfig(env.databaseUrl), max: 10 });
 
+// An idle connection can die underneath us (laptop changes Wi-Fi, Tiger
+// restarts). pg reports that as an 'error' event on the pool; without a
+// listener Node treats it as fatal and the whole API exits. Log it instead:
+// the pool drops that client and opens a fresh one on the next query.
+pool.on('error', (err) => {
+  console.warn('[db] idle connection lost, will reconnect:', err.message);
+});
+
 export type Db = pg.PoolClient;
 
 /**

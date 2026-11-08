@@ -39,8 +39,9 @@ export default function SignIn() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
       <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 20 }}>
         <Wordmark size={20} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <LightPole light="green" size="lg" />
+        {/* The pole shrinks to md so it never collides with the headline on shorter phones. */}
+        <View style={{ flex: 1, minHeight: 200, alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}>
+          <LightPole light="green" size="md" />
         </View>
         <Text
           accessibilityRole="header"

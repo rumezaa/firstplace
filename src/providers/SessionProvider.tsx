@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { api, setAccessToken, setUnauthorizedHandler } from '@/lib/api';
@@ -47,6 +47,24 @@ export const AUTH0_REDIRECT_URI = AuthSession.makeRedirectUri({ scheme: 'firstpl
 /** Demo safety net: the server signs you in as the seeded demo user. */
 const DEMO_EMAIL = process.env.EXPO_PUBLIC_DEMO_EMAIL?.trim() ?? '';
 export const DEMO_ACCOUNT_AVAILABLE = Boolean(DEMO_EMAIL);
+
+interface PreparedAuth {
+  discovery: AuthSession.DiscoveryDocument;
+  request: AuthSession.AuthRequest;
+}
+
+async function prepareAuth0(): Promise<PreparedAuth> {
+  const discovery = await AuthSession.fetchDiscoveryAsync(`https://${AUTH0_DOMAIN}`);
+  const request = new AuthSession.AuthRequest({
+    clientId: AUTH0_CLIENT_ID,
+    redirectUri: AUTH0_REDIRECT_URI,
+    scopes: ['openid', 'profile', 'email'],
+    usePKCE: true,
+    extraParams: { audience: AUTH0_AUDIENCE },
+  });
+  await request.makeAuthUrlAsync(discovery); // cached on the request; promptAsync reuses it
+  return { discovery, request };
+}
 
 /** Reads name/email out of an ID token. Display only; the server verifies tokens. */
 function claimsFromIdToken(idToken?: string): { email: string | null; name: string | null } {
@@ -142,17 +160,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   // ------------------------------------------------------------------ auth ---
+  // Build the Auth0 request (discovery + PKCE + URL) BEFORE the tap. Browsers
+  // only allow the sign-in popup if it opens right after the click; any await
+  // in between (network, hashing) gets it blocked as "not user-initiated".
+  const prepared = useRef<Promise<PreparedAuth> | null>(null);
+  useEffect(() => {
+    if (AUTH0_AVAILABLE) prepared.current = prepareAuth0();
+  }, []);
+
   const signInWithAuth0 = useCallback(async () => {
     if (!AUTH0_AVAILABLE) throw new Error('Auth0 is not set up yet. Use the demo account.');
 
-    const discovery = await AuthSession.fetchDiscoveryAsync(`https://${AUTH0_DOMAIN}`);
-    const request = new AuthSession.AuthRequest({
-      clientId: AUTH0_CLIENT_ID,
-      redirectUri: AUTH0_REDIRECT_URI,
-      scopes: ['openid', 'profile', 'email'],
-      usePKCE: true,
-      extraParams: { audience: AUTH0_AUDIENCE },
-    });
+    const { discovery, request } = await (prepared.current ?? prepareAuth0());
+    prepared.current = prepareAuth0(); // each request is single-use: ready the next one
 
     const result = await request.promptAsync(discovery);
     if (result.type === 'cancel' || result.type === 'dismiss') return;

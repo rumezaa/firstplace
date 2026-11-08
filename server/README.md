@@ -59,3 +59,13 @@ Errors come back as `{ "error": "message safe to show", "hint": "stable_token" }
 - auto check-out after 3 hours (every 5 min)
 - familiar-faces matcher (every 15 min; still a stub in `db/migrations/050_matcher_and_rewards.sql`)
 - forget personal check-ins older than 90 days (daily). Anonymous TimescaleDB events stay.
+
+## Auth0 setup (what worked for us)
+
+1. **APIs → Create API**: identifier `https://api.firstplace.app`, RS256.
+2. **Applications → Create Application**: `FirstPlace`, type **Native**.
+3. App → **URLs** tab (not Settings) → **Allowed Callback URLs** and **Allowed Logout URLs**:
+   `exp://<laptop-LAN-IP>:8081, http://localhost:8081`. The sign-in screen shows the exact URL for each device in dev. The LAN IP changes with the Wi-Fi.
+   Leave **Application Login URI** empty: it only accepts https. Auth0 also rejects a bare `firstplace://`.
+4. App → **API Access** tab → authorize **FirstPlace API** for user access. Without it, sign-in fails with *"Client … is not authorized to access resource server"*.
+5. App `.env`: `EXPO_PUBLIC_AUTH0_DOMAIN`, `EXPO_PUBLIC_AUTH0_CLIENT_ID`, `EXPO_PUBLIC_AUTH0_AUDIENCE`. Server `.env`: `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`.

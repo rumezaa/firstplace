@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, TextInput, View } from 'react-native';
 
-import { APP_NAME } from '@/lib/branding';
 import { fetchCheckinHistory } from '@/lib/checkins';
 import { relativeDay, timeOfDay } from '@/lib/format';
 import { errorMessage } from '@/lib/api';

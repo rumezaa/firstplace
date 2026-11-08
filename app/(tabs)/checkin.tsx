@@ -117,8 +117,8 @@ function PickByHand({ onTable }: { onTable: (id: string) => void }) {
   const tables = useAsync(() => (venueId ? fetchTables(venueId) : Promise.resolve([])), [venueId]);
 
   return (
-    <Card className="gap-3">
-      <SectionTitle>Or pick a place</SectionTitle>
+    <Card className="gap-1">
+      <SectionTitle className="mb-1">Or pick a place</SectionTitle>
       {!venueId ? (
         (venues.data ?? []).map((v) => (
           <Row key={v.id} label={v.name} onPress={() => setVenueId(v.id)} />
@@ -146,9 +146,10 @@ function Row({ label, onPress }: { label: string; onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={label}
       style={{ minHeight: MIN_TAP_TARGET }}
-      className="border-border-warm justify-center rounded-tile border px-4"
+      className="border-border-warm flex-row items-center justify-between border-b"
     >
       <Text className="text-espresso text-base">{label}</Text>
+      <Text className="text-mocha text-lg">›</Text>
     </Pressable>
   );
 }

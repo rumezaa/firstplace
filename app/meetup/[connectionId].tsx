@@ -124,7 +124,7 @@ export default function MeetupScreen() {
         <Body>
           {view.status === 'confirmed'
             ? 'You both said yes. Here is the plan you agreed on.'
-            : `Tick whatever works for you. ${name} does the same, and we only ever show the times you both picked.`}
+            : `Pick the times that work for you. Only the times you both pick are shared.`}
         </Body>
       </View>
 
@@ -223,17 +223,9 @@ export default function MeetupScreen() {
 
 function SharedCard({ view }: { view: MeetupView }) {
   const common = [...new Set([...view.shared.interests, ...view.shared.topics])].slice(0, 5);
-  return (
-    <Card accent="sage" className="gap-2">
-      <SectionTitle>{view.their_first_name ?? 'Your connection'}</SectionTitle>
-      {view.met_at ? <Caption>You met at {view.met_at.name}.</Caption> : null}
-      {common.length ? (
-        <Body>You both put down {common.join(', ')}.</Body>
-      ) : (
-        <Body>You have not listed much in common yet. Adding interests on your profile sharpens this.</Body>
-      )}
-    </Card>
-  );
+  // One quiet line under the title; the name is already the headline.
+  const bits = [view.met_at ? `Met at ${view.met_at.name}` : null, common.length ? `both like ${common.join(', ')}` : null].filter(Boolean);
+  return bits.length ? <Caption>{bits.join(' · ')}</Caption> : null;
 }
 
 /* ------------------------------------------------------------- the picker -- */
@@ -260,7 +252,7 @@ function Picker({
         <SectionTitle>When are you free?</SectionTitle>
         <Caption>
           {view.forecast_available
-            ? 'The forecast is on each one, so you can aim for the decent weather.'
+            ? 'With the forecast for each.'
             : 'The forecast is unavailable right now, so these are times only.'}
         </Caption>
       </View>

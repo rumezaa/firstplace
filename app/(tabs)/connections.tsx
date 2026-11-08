@@ -1,11 +1,15 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import { View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { RefreshControl, View } from 'react-native';
 
+import type { FamiliarFaceCard } from '@/lib/database.types';
+import { faceDetail, faceHeadline, faceState, fetchFamiliarFaces, respondToFamiliarFace } from '@/lib/familiarFaces';
 import { relativeDay } from '@/lib/format';
+import { errorMessage } from '@/lib/api';
 import { fetchConnections } from '@/lib/conversations';
 import { fetchMyMeetups, type MeetupSummary } from '@/lib/meetups';
 import { useAsync } from '@/hooks/useAsync';
+import { useSession } from '@/providers/SessionProvider';
 import {
   Badge,
   Body,
@@ -21,7 +25,149 @@ import {
 } from '@/components/ui';
 
 export default function ConnectionsScreen() {
-  return <Screen><MyConnections /></Screen>;
+  const { profile, updateProfile } = useSession();
+  const faces = useAsync(fetchFamiliarFaces, []);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const respond = useCallback(
+    async (card: FamiliarFaceCard, accept: boolean) => {
+      setBusyId(card.id);
+      setActionError(null);
+      try {
+        await respondToFamiliarFace(card.id, accept);
+        await faces.reload();
+      } catch (e) {
+        setActionError(errorMessage(e));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [faces],
+  );
+
+  const optedOut = profile && !profile.familiar_faces_opt_in;
+
+  return (
+    <Screen
+      refreshControl={<RefreshControl refreshing={faces.loading} onRefresh={() => void faces.reload()} />}
+    >
+      <MyConnections />
+
+      <View className="gap-1">
+        <Title>Familiar faces</Title>
+        <Body>
+          The people you keep seeing, without either of you having to make the first move.
+        </Body>
+      </View>
+
+      {optedOut ? (
+        <Card accent="amber" className="gap-3">
+          <SectionTitle>Familiar faces is off</SectionTitle>
+          <Body>
+            Turn it on and we will tell you when you have crossed paths with the same regular three
+            or more times. Nothing is shared unless you both say yes.
+          </Body>
+          <Button
+            label="Turn on familiar faces"
+            onPress={() => void updateProfile({ familiar_faces_opt_in: true })}
+          />
+        </Card>
+      ) : null}
+
+      {actionError ? <ErrorNote error={actionError} /> : null}
+      {faces.error ? <ErrorNote error={faces.error} onRetry={() => void faces.reload()} /> : null}
+
+      {faces.loading && !faces.data ? <Loading label="Checking who you keep running into" /> : null}
+
+      {faces.data && faces.data.length === 0 && !optedOut ? (
+        <EmptyState
+          title="No familiar faces yet"
+          body="Once you and another regular have overlapped at the same place three times, a card shows up here. Keep going back to the same spot."
+        />
+      ) : null}
+
+      {(faces.data ?? []).map((card) => (
+        <FaceCard
+          key={card.id}
+          card={card}
+          busy={busyId === card.id}
+          onRespond={(accept) => void respond(card, accept)}
+        />
+      ))}
+
+      <Card className="gap-2">
+        <SectionTitle>How this works</SectionTitle>
+        <Caption>
+          We count overlapping check-ins at the same place. Three or more and you both get a card.
+          Names are revealed only when you have both said yes. Nobody ever sees where you are right
+          now, and going incognito takes you out of this entirely.
+        </Caption>
+      </Card>
+    </Screen>
+  );
+}
+
+function FaceCard({
+  card,
+  busy,
+  onRespond,
+}: {
+  card: FamiliarFaceCard;
+  busy: boolean;
+  onRespond: (accept: boolean) => void;
+}) {
+  const router = useRouter();
+  const state = faceState(card);
+
+  return (
+    <Card accent={state === 'mutual' ? 'berry' : 'clay'} className="gap-3">
+      <View className="flex-row flex-wrap items-center gap-2">
+        {state === 'mutual' ? <Badge label="You both said yes" tone="chat" /> : null}
+        {state === 'waiting_on_them' ? <Badge label="Waiting on them" tone="filling" /> : null}
+        {state === 'pending' ? <Badge label="New" tone="open" /> : null}
+        {card.last_overlap_at ? <Badge label={`Last seen ${relativeDay(card.last_overlap_at)}`} /> : null}
+      </View>
+
+      <SectionTitle>{faceHeadline(card)}</SectionTitle>
+      <Body>{faceDetail(card)}</Body>
+
+      {state === 'pending' ? (
+        <View className="flex-row gap-3">
+          <Button
+            label="Say yes"
+            className="flex-1"
+            busy={busy}
+            onPress={() => onRespond(true)}
+          />
+          <Button
+            label="Ignore"
+            variant="quiet"
+            className="flex-1"
+            disabled={busy}
+            onPress={() => onRespond(false)}
+          />
+        </View>
+      ) : null}
+
+      {state === 'waiting_on_them' ? (
+        <Button
+          label="Change my mind"
+          variant="quiet"
+          busy={busy}
+          onPress={() => onRespond(false)}
+        />
+      ) : null}
+
+      {state === 'mutual' ? (
+        <Button
+          label={`Meet at the chat table at ${card.venue_name}`}
+          variant="secondary"
+          onPress={() => router.push(`/venue/${card.venue_id}`)}
+        />
+      ) : null}
+    </Card>
+  );
 }
 
 /**

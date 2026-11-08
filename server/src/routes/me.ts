@@ -9,7 +9,10 @@ import { generate, parseStringList } from '../gemini.js';
 export const me = new Hono<{ Variables: AuthVars }>();
 me.use('*', requireAuth);
 
-const PROFILE_FIELDS = ['name', 'interests', 'vibe_tags', 'incognito', 'familiar_faces_opt_in'] as const;
+const PROFILE_FIELDS = [
+  'name', 'interests', 'vibe_tags', 'incognito', 'familiar_faces_opt_in',
+  'languages', 'topics', 'comm_pref', 'share_comm_pref', 'age_range',
+] as const;
 
 me.get('/', async (c) => {
   const row = await asUser(c.get('userId'), (db) =>

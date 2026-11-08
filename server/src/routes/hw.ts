@@ -4,13 +4,14 @@ import { timingSafeEqual } from 'node:crypto';
 import { asSystem } from '../db.js';
 import { env } from '../env.js';
 
-// The chat-table light (ESP32). It polls this every ~2 seconds.
+// The First Place box (ESP32). It polls this every ~2 seconds and shows one
+// light: off | green | yellow | red. The rules live in public.table_light()
+// (db/migrations/080_conversations.sql) and FAIL CLOSED: no claim, box
+// disabled, after 10pm or anything unclear → off. Red while a conversation runs.
 //
-// FAIL CLOSED: the light is only "welcome" when somebody is checked in at the
-// table and EVERY person at it is open to chat. Any "no" turns it off. The
-// device should also go dark by itself if it hears nothing for 10 seconds.
-//
-// The response is counts only: the device never learns who is sitting there.
+// The device receives a colour and nothing else: no names, no counts of who.
+// If it hears nothing for ~10 seconds it must show its "no signal" pattern,
+// never a stale green or yellow.
 export const hw = new Hono();
 
 function validKey(given: string | undefined): boolean {
@@ -25,25 +26,9 @@ function validKey(given: string | undefined): boolean {
 hw.get('/tables/:tableId/state', async (c) => {
   if (!validKey(c.req.header('x-device-key'))) throw new HTTPException(401, { message: 'Unknown device.' });
 
-  const state = await asSystem(async (db) => {
-    const r = await db.query<{ seats: number; is_chat_table: boolean; seated: number; open: number }>(
-      `select t.seats, t.is_chat_table,
-              count(ac.id)::int                               as seated,
-              count(ac.id) filter (where ac.open_to_chat)::int as open
-       from public.tables t
-       left join app_private.active_checkins ac on ac.table_id = t.id
-       where t.id = $1
-       group by t.id`,
-      [c.req.param('tableId')],
-    );
-    return r.rows[0];
-  });
-  if (!state) throw new HTTPException(404, { message: 'No such table.' });
-
-  // Incognito people are not in active_checkins at all. That can only make the
-  // light go off (via the table's own status) — never on.
-  const everyoneOpen = state.seated > 0 && state.open === state.seated;
-  const light = !state.is_chat_table || !everyoneOpen ? 'off' : state.seated >= state.seats ? 'full' : 'welcome';
-
-  return c.json({ light, lit: light !== 'off', openToChat: everyoneOpen ? state.open : 0, at: new Date().toISOString() });
+  const row = await asSystem((db) =>
+    db.query<{ light: string | null }>('select public.table_light($1) as light', [c.req.param('tableId')]),
+  );
+  const light = row.rows[0]?.light ?? 'off';
+  return c.json({ light, at: new Date().toISOString(), pollMs: 2000 });
 });

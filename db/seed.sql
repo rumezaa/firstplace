@@ -395,3 +395,28 @@ values
   ('a11ce000-0000-4000-8000-000000000001', 'c0ffee00-0000-4000-8000-000000000002', 'frequent', 1, 'in_progress'),
   ('a11ce000-0000-4000-8000-000000000001', null,                                    'passport', 2, 'in_progress')
 on conflict do nothing;
+
+-- ---------------------------------------------------------------------------
+-- 5. PRD profile fields for the demo: overlapping topics and languages, so a
+--    request card and the shared-topics screen have real content. Everyone
+--    seeded is a verified adult (we store only "verified", never ID data).
+-- ---------------------------------------------------------------------------
+update public.users u set
+  topics         = s.topics,
+  languages      = s.languages,
+  age_range      = s.age_range,
+  comm_pref      = s.comm_pref,
+  share_comm_pref = s.comm_pref is not null,
+  id_verified_at = now() - interval '30 days',
+  interests      = u.interests || s.extra_interests
+from (values
+  ('demo@thirdplace.test',   array['hiking','board games','Calgary food','photography'], array['English','Mandarin'], '25-34', null,             array['hiking']),
+  ('maya@thirdplace.test',   array['books','running','Calgary food','music'],            array['English','Igbo'],     '25-34', null,             array['board games']),
+  ('sam@thirdplace.test',    array['hiking','music','cooking','travel'],                 array['English','Spanish'],  '18-24', null,             array['hiking','board games']),
+  ('priya@thirdplace.test',  array['books','science','travel'],                          array['English','Hindi'],    '25-34', 'I''d rather type first', array['hiking']),
+  ('jordan@thirdplace.test', array['music','art','skateboarding'],                       array['English'],            '18-24', null,             array['music']),
+  ('wei@thirdplace.test',    array['hiking','travel','languages','board games'],        array['English','Mandarin'], '18-24', 'Please face me, I lip-read', array['hiking','board games']),
+  ('taylor@thirdplace.test', array['podcasts','baking'],                                 array['English'],            '35-44', null,             array[]::text[]),
+  ('ghost@thirdplace.test',  array['cycling'],                                           array['English'],            '45-54', null,             array[]::text[])
+) as s(email, topics, languages, age_range, comm_pref, extra_interests)
+where u.auth0_sub = 'seed|' || s.email;

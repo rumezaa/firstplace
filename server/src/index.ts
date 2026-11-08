@@ -8,6 +8,7 @@ import { asSystem, pool } from './db.js';
 import { env } from './env.js';
 import { startJobs } from './jobs.js';
 import { actions } from './routes/actions.js';
+import { conversations } from './routes/conversations.js';
 import { hw } from './routes/hw.js';
 import { me } from './routes/me.js';
 import { venues } from './routes/venues.js';
@@ -41,6 +42,7 @@ if (env.devLogin) {
 
 app.route('/venues', venues);
 app.route('/me', me);
+app.route('/', conversations);
 app.route('/', actions);
 
 app.notFound((c) => c.json({ error: 'Not found.' }, 404));

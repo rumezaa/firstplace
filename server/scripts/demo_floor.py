@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Set the library 3rd floor up for the demo video (dev login only).
 
-    python3 server/scripts/demo_floor.py            # seat 7 students; empty seats show yellow
-    python3 server/scripts/demo_floor.py reset      # everyone leaves, lights off
+    python3 server/scripts/demo_floor.py            # default: every seat free (yellow)
+    python3 server/scripts/demo_floor.py busy       # seat 7 demo students (4 green, 3 red)
     python3 server/scripts/demo_floor.py --api http://172.20.10.4:8787
 
 TFDL floor 3 (16 tables, needs migrations 150 and 190): 7 students seated,
@@ -60,7 +60,7 @@ ALL_STUDENTS = ['priya', 'wei', 'jordan', 'amara', 'ben', 'chloe', 'dev', 'elena
 for name in ['demo'] + ALL_STUDENTS:
     call('POST', '/me/leave-now', token=login(name))
 
-if 'reset' not in sys.argv:
+if 'busy' in sys.argv:
     for name, table, light in SEATS:
         status, body = call('POST', f'/tables/{table}/claim', {'light': light}, token=login(name))
         print(f'{name:7} -> {light:6} {status} {"" if status == 200 else body}')

@@ -113,6 +113,7 @@ a { color: inherit; }
 /* Motion: only applied once main.js has added .js, so content is visible without it */
 .js .reveal { opacity: 0; transform: translateY(16px); }
 .reveal.is-in { opacity: 1; transform: none; transition: 500ms ease 150ms; }
+.panel picture { display: block; overflow: hidden; }
 .js .panel img { transform: scale(1.06); transition: transform 700ms ease; }
 .js .panel.is-in img { transform: scale(1); }
 

@@ -22,13 +22,15 @@
   }, { threshold: 0.35 });
   targets.forEach(function (el) { revealObserver.observe(el); });
 
-  // Header turns solid once the legend band reaches the top, which means #p6 has scrolled past.
+  // Header turns solid exactly when the legend band crosses the top line of the viewport
+  // (which means #p6 has scrolled past), in both scroll directions. The zero-height root
+  // at the top edge makes the observer fire only at that crossing.
   if (legend && header) {
     var headerObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         header.classList.toggle('is-solid', entry.boundingClientRect.top <= 0);
       });
-    }, { threshold: 0 });
+    }, { threshold: 0, rootMargin: '0px 0px -100% 0px' });
     headerObserver.observe(legend);
   }
 })();

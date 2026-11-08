@@ -59,7 +59,8 @@ export default function ProfileScreen() {
   const { profile, session, updateProfile, signOut } = useSession();
   // PRD profile fields not yet in the generated types.
   const extra = (profile ?? {}) as { topics?: string[]; languages?: string[] };
-  const history = useAsync(() => fetchCheckinHistory(20), []);
+  // Personal check-ins are kept 90 days, so this is the whole history.
+  const history = useAsync(() => fetchCheckinHistory(500), []);
   const venues = useAsync(fetchVenues, []);
 
   const [name, setName] = useState<string | null>(null);
@@ -113,7 +114,7 @@ export default function ProfileScreen() {
           <Caption numberOfLines={1}>{session?.user.email}</Caption>
           {history.data ? (
             <Caption>
-              {history.data.length} {history.data.length === 1 ? 'visit' : 'visits'} recently
+              {history.data.length} {history.data.length === 1 ? 'visit' : 'visits'} in the last 90 days
             </Caption>
           ) : null}
         </View>

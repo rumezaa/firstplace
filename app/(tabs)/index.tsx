@@ -5,7 +5,7 @@ import { Text } from '@/components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AVAILABILITY, tablesSummary } from '@/lib/availability';
-import { APP_NAME } from '@/lib/branding';
+import { useSession } from '@/providers/SessionProvider';
 import type { Venue, VenueLive } from '@/lib/database.types';
 import { people } from '@/lib/format';
 import { MIN_TAP_TARGET, colors } from '@/lib/theme';
@@ -41,6 +41,14 @@ export default function MapScreen() {
   const live = liveState.data ?? {};
   const [asList, setAsList] = useState(false);
   const visible = filterVenues(venues, live, filters);
+  const { profile } = useSession();
+  const firstName = profile?.name?.trim().split(' ')[0] ?? '';
+  const openNow = Object.values(live).reduce((n, l) => n + (l.people_open_to_chat ?? 0), 0);
+  // The liveliest place right now, for the card at the bottom.
+  const best = venues
+    .map((v) => ({ v, n: live[v.id]?.people_open_to_chat ?? 0 }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n)[0];
   const selected = visible.find((v) => v.id === selectedId) ?? null;
 
   function toggle(key: keyof VenueFilters) {
@@ -88,12 +96,13 @@ export default function MapScreen() {
         }}
       >
         <View className="pb-2 pl-5 pr-28 pt-1" pointerEvents="none">
-          <Text className="text-espresso text-2xl font-bold" accessibilityRole="header">
-            {APP_NAME}
+          <Text display className="text-espresso text-[26px] leading-[31px] font-bold" accessibilityRole="header" style={{ letterSpacing: -0.4 }}>
+            {greeting()}{firstName ? `, ${firstName}` : ''}
           </Text>
           <Caption>
-            {visible.length} of {venues.length} places
-            {activeFilterCount(filters) > 0 ? ' match your filters' : ' in Calgary'}
+            {activeFilterCount(filters) > 0
+              ? `${visible.length} of ${venues.length} places match`
+              : `${openNow} ${openNow === 1 ? 'person' : 'people'} open to talk across ${venues.length} places`}
           </Caption>
         </View>
 
@@ -130,6 +139,27 @@ export default function MapScreen() {
           />
         </ScrollView>
       </SafeAreaView>
+
+      {!selected && best ? (
+        <Pressable
+          onPress={() => setSelectedId(best.v.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`${best.v.name}, ${best.n} open to talk now`}
+          style={{
+            position: 'absolute', left: 16, right: 16, bottom: 16,
+            backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+            flexDirection: 'row', alignItems: 'center', gap: 12,
+            shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 4,
+          }}
+        >
+          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.go }} />
+          <View style={{ flex: 1 }}>
+            <Caption>Open to talk now</Caption>
+            <Text className="text-espresso text-[17px] font-semibold" numberOfLines={1}>{best.v.name}</Text>
+          </View>
+          <Text display className="text-espresso text-[24px] font-bold">{best.n}</Text>
+        </Pressable>
+      ) : null}
 
       {selected ? (
         <VenuePreviewSheet
@@ -243,4 +273,9 @@ function VenuePreviewSheet({
       </View>
     </View>
   );
+}
+
+function greeting(): string {
+  const h = new Date().getHours();
+  return h < 5 ? 'Good evening' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }

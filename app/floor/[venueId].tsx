@@ -52,7 +52,19 @@ export default function FloorScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: '' }} />
+      <Stack.Screen
+        options={{
+          title: '',
+          // Opened from the NFC tag there's nothing to go back to, so offer Explore.
+          headerLeft: router.canGoBack()
+            ? undefined
+            : () => (
+                <Pressable onPress={() => router.replace('/')} accessibilityRole="button" hitSlop={12}>
+                  <Text style={{ fontSize: 17, color: colors.clay }}>‹ Explore</Text>
+                </Pressable>
+              ),
+        }}
+      />
 
       <Card className="gap-1">
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

@@ -69,6 +69,8 @@ function RootNavigator() {
       />
       <Stack.Screen name="dashboard/[venueId]" options={{ title: 'Venue dashboard' }} />
       <Stack.Screen name="table/[id]" options={{ title: '' }} />
+      <Stack.Screen name="floor/[venueId]" options={{ title: '' }} />
+      <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="waiting/[requestId]" options={{ title: 'Request sent' }} />
       <Stack.Screen name="conversation" options={{ title: 'In conversation' }} />
       <Stack.Screen name="meetup/[connectionId]" options={{ title: 'Plan the next one' }} />

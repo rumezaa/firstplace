@@ -86,6 +86,8 @@ export const requestChat = (tableId: string) =>
   api.post<{ request_id: string; expires_at: string }>(`/tables/${tableId}/request`);
 export const fetchRequestStatus = (requestId: string) =>
   api.get<{ status: 'pending' | 'accepted' | 'not_available'; conversation_id?: string }>(`/requests/${requestId}`);
+export const cancelRequest = (requestId: string) =>
+  api.post<{ cancelled: boolean }>(`/requests/${requestId}/cancel`);
 export const fetchIncomingRequests = () => api.get<RequestCard[]>('/me/requests');
 export const respondToRequest = (requestId: string, accept: boolean, minutes = 30) =>
   api.post<{ accepted: boolean; conversation_id?: string }>(`/requests/${requestId}/respond`, { accept, minutes });

@@ -96,7 +96,7 @@ export default function MapScreen() {
         }}
       >
         <View className="pb-2 pl-5 pr-28 pt-1" pointerEvents="none">
-          <Text display className="text-espresso text-[26px] leading-[31px] font-bold" accessibilityRole="header" style={{ letterSpacing: -0.4 }}>
+          <Text className="text-espresso text-[22px] leading-[28px] font-semibold" accessibilityRole="header" style={{ letterSpacing: -0.2 }}>
             {greeting()}{firstName ? `, ${firstName}` : ''}
           </Text>
           <Caption>

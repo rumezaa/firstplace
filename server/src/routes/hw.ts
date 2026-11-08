@@ -26,9 +26,18 @@ function validKey(given: string | undefined): boolean {
 hw.get('/tables/:tableId/state', async (c) => {
   if (!validKey(c.req.header('x-device-key'))) throw new HTTPException(401, { message: 'Unknown device.' });
 
+  const tableId = c.req.param('tableId');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tableId)) {
+    throw new HTTPException(400, { message: 'Table id must be a UUID.' });
+  }
   const row = await asSystem((db) =>
-    db.query<{ light: string | null }>('select public.table_light($1) as light', [c.req.param('tableId')]),
+    db.query<{ exists: boolean; light: string | null }>(
+      'select exists(select 1 from public.tables where id = $1) as exists, public.table_light($1) as light',
+      [tableId],
+    ),
   );
-  const light = row.rows[0]?.light ?? 'off';
+  // An unknown table is a configuration fault (the box shows it), not a dark table.
+  if (!row.rows[0]?.exists) throw new HTTPException(404, { message: 'No such table.' });
+  const light = row.rows[0].light ?? 'off';
   return c.json({ light, at: new Date().toISOString(), pollMs: 2000 });
 });

@@ -19,14 +19,14 @@ export default function TabsLayout() {
         headerTitleStyle: { fontWeight: '700' },
         headerShadowVisible: false,
         tabBarActiveTintColor: colors.clay,
-        tabBarInactiveTintColor: colors.mocha,
+        tabBarInactiveTintColor: '#7C8185',
         tabBarStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: 'rgba(250,250,248,0.96)',
           borderTopColor: colors.border,
-          height: 88,
-          paddingTop: 6,
+          height: 83,
+          paddingTop: 7,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
         tabBarItemStyle: { paddingVertical: 4 },
         sceneStyle: { backgroundColor: colors.cream },
       }}
@@ -34,35 +34,30 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Map',
+          title: 'Explore',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="map-outline" size={size} color={color as string} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'map' : 'map-outline'} size={size} color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen
         name="checkin"
         options={{
-          title: 'Check in',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="qr-code-outline" size={size} color={color as string} />
+          title: 'Table',
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'radio-button-on' : 'radio-button-off'} size={size} color={color as string} />
           ),
         }}
       />
       <Tabs.Screen
         name="connections"
         options={{
-          title: 'Connections',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color as string} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="rewards"
-        options={{
-          title: 'Rewards',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ribbon-outline" size={size} color={color as string} />
+          title: 'People',
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color as string} />
           ),
         }}
       />
@@ -70,8 +65,9 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: 'You',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color as string} />
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color as string} />
           ),
         }}
       />

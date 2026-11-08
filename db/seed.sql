@@ -175,8 +175,11 @@ begin
     v_n   := 4 + (v_idx % 5);   -- 4..8 tables, deterministic
 
     for i in 1 .. v_n loop
-      insert into public.tables (venue_id, label, seats, status, is_chat_table)
+      -- Stable ids (derived from venue + label) so box configs and printed
+      -- QR codes keep working after the demo data is reset.
+      insert into public.tables (id, venue_id, label, seats, status, is_chat_table)
       values (
+        md5(v.id::text || ':T' || i)::uuid,
         v.id,
         'T' || i,
         case when i % 3 = 0 then 4 else 2 end,
@@ -188,8 +191,8 @@ begin
     -- The chat table. One per venue, deliberately bigger and clearly named --
     -- the whole point is that it is obvious which table is the one where it is
     -- fine to say hello to a stranger.
-    insert into public.tables (venue_id, label, seats, status, is_chat_table)
-    values (v.id, 'Chat Table', 6, 'open', true);
+    insert into public.tables (id, venue_id, label, seats, status, is_chat_table)
+    values (md5(v.id::text || ':Chat Table')::uuid, v.id, 'Chat Table', 6, 'open', true);
   end loop;
 end $$;
 

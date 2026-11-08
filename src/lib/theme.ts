@@ -6,28 +6,36 @@
  * colour, change it in both files.
  */
 export const colors = {
-  cream: '#FBF7F1',
+  cream: '#F6F6F3',
   surface: '#FFFFFF',
-  sunk: '#F4ECE2',
-  border: '#E8DED2',
+  sunk: '#EEEEEA',
+  border: '#E4E4DF',
 
-  espresso: '#2E2017',
-  mocha: '#6B5445',
+  espresso: '#131516',
+  mocha: '#5A5F63',
 
-  clay: '#9C4A28',
-  claySoft: '#F6E6DC',
+  clay: '#1C5C64',
+  claySoft: '#E6F2F3',
 
-  sage: '#2F6B4A',
-  sageSoft: '#E4F0E8',
+  sage: '#1F6B3D',
+  sageSoft: '#E3F3E8',
 
-  amber: '#8A5A00',
-  amberSoft: '#FBEFD6',
+  amber: '#7A5A12',
+  amberSoft: '#FBF3DC',
 
-  brick: '#9B3326',
-  brickSoft: '#F8E3E0',
+  brick: '#AC2F28',
+  brickSoft: '#FBE7E4',
 
-  berry: '#7A3B6B',
-  berrySoft: '#F3E6F0',
+  berry: '#1C5C64',
+  berrySoft: '#E6F2F3',
+
+  /* The box light itself (lamps, pins, picker symbols). Not for text. */
+  go: '#2E9E5B',
+  ask: '#E8B630',
+  askInk: '#3A2A00',
+  stop: '#D0433A',
+  lampOff: '#2B2E30',
+  pole: '#17191A',
 } as const;
 
 /**

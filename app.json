@@ -12,7 +12,7 @@
       "requireFullScreen": true,
       "bundleIdentifier": "com.firstplace.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "FirstPlace uses the camera to scan the QR code at a cafe so you can check in to a table."
+        "NSCameraUsageDescription": "ChatterBox uses the camera to read the code on a table's box so you can take a seat."
       }
     },
     "android": {
@@ -30,7 +30,9 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "ChatterBox",
+      "shortName": "ChatterBox"
     },
     "plugins": [
       "expo-router",
@@ -38,7 +40,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FirstPlace uses the camera to scan the QR code at a cafe so you can check in to a table."
+          "cameraPermission": "ChatterBox uses the camera to read the code on a table's box so you can take a seat."
         }
       ],
       "expo-font",

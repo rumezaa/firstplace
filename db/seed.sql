@@ -423,3 +423,35 @@ from (values
   ('ghost@thirdplace.test',  array['cycling'],                                           array['English'],            '45-54', null,             array[]::text[])
 ) as s(email, topics, languages, age_range, comm_pref, extra_interests)
 where u.auth0_sub = 'seed|' || s.email;
+
+-- ---------------------------------------------------------------------------
+-- 6. One finished conversation that BOTH people called good, so there is a
+--    real connection on the Connections screen and the meetup planner
+--    (db/migrations/100_meetups.sql) has something to plan.
+--
+--    Alex and Wei are the pair on purpose: they share "hiking" AND
+--    "board games", one outdoors and one in, so the plan the forecast picks
+--    visibly changes with the weather instead of always being a cafe.
+-- ---------------------------------------------------------------------------
+with pair as (
+  select (select id from public.users where auth0_sub = 'seed|demo@thirdplace.test') as alex,
+         (select id from public.users where auth0_sub = 'seed|wei@thirdplace.test')  as wei,
+         t.id as table_id, t.venue_id
+  from public.tables t
+  where t.venue_id = 'c0ffee00-0000-4000-8000-000000000002' and t.is_chat_table
+  limit 1
+), conv as (
+  insert into public.conversations
+    (table_id, venue_id, seated_user, joiner_user, via, started_at, ends_at, ended_at, seated_vote, joiner_vote)
+  select table_id, venue_id, alex, wei, 'request',
+         now() - interval '6 days', now() - interval '6 days' + interval '30 minutes',
+         now() - interval '6 days' + interval '34 minutes', 'good', 'good'
+  from pair
+  where alex is not null and wei is not null
+  returning id, seated_user, joiner_user
+)
+insert into public.connections (user_a, user_b, conversation_id, created_at)
+select least(seated_user, joiner_user), greatest(seated_user, joiner_user), id,
+       now() - interval '6 days'
+from conv
+on conflict (user_a, user_b) do nothing;

@@ -27,6 +27,13 @@ export const env = {
   geminiModels: (process.env.GEMINI_MODELS ?? 'gemini-3.5-flash,gemini-flash-latest')
     .split(',').map((m) => m.trim()).filter(Boolean),
 
+  // Weather for the meetup planner. Open-Meteo needs no key, so this is only
+  // here so a self-hosted mirror can be pointed at instead.
+  weatherApiUrl: process.env.WEATHER_API_URL ?? 'https://api.open-meteo.com/v1/forecast',
+  weatherTimeoutMs: Number(process.env.WEATHER_TIMEOUT_MS ?? 4000),
+  // Must match public.local_tz() in db/migrations/010_init.sql.
+  localTimezone: process.env.LOCAL_TIMEZONE ?? 'America/Edmonton',
+
   // Chat-table lights: comma-separated device keys. Each ESP32 sends one.
   hwDeviceKeys: (process.env.HW_DEVICE_KEYS ?? '').split(',').map((k) => k.trim()).filter(Boolean),
 

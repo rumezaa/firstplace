@@ -40,7 +40,6 @@ export default function VenueScreen() {
   const busy = useAsync(() => fetchBusyHours(venueId), [venueId]);
   const crowd = useAsync(() => fetchCrowdTags(venueId), [venueId]);
   // Gemini line from live aggregates; falls back to the venue's own description.
-  const router = useRouter();
   const vibe = useAsync(() => fetchVenueVibe(venueId).catch(() => null), [venueId]);
 
   const refresh = useCallback(() => {

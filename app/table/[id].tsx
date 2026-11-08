@@ -300,10 +300,9 @@ function IncomingRequests({ onAccepted }: { onAccepted: () => void }) {
 
   const cards = requests.data ?? [];
   if (error || requests.error) return <ErrorNote error={error ?? requests.error!} onRetry={() => { setError(null); reload(); }} />;
-  if (requests.loading && !requests.data) return <Loading label="Checking requests" />;
-  if (cards.length === 0) {
-    return <Body className="px-1">No requests yet. Keep this screen open to see new requests.</Body>;
-  }
+  // Requests were retired when yellow became "free seat" (migration 190); this
+  // only shows something if an old one is still pending. No spinner, no empty text.
+  if (cards.length === 0) return null;
 
   async function respond(card: RequestCard, accept: boolean) {
     if (acting.current) return;

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 import type { FamiliarFaceCard } from './database.types';
 import { weekdayName } from './format';
 
@@ -8,18 +8,18 @@ import { weekdayName } from './format';
  * person's user id, and only returns a first name once both sides accepted.
  */
 export async function fetchFamiliarFaces(): Promise<FamiliarFaceCard[]> {
-  const { data, error } = await supabase.rpc('my_familiar_faces');
-  if (error) throw error;
-  return (data ?? []) as FamiliarFaceCard[];
+  return api.get<FamiliarFaceCard[]>('/me/familiar-faces');
 }
 
 export async function respondToFamiliarFace(id: string, accept: boolean): Promise<boolean> {
-  const { data, error } = await supabase.rpc('respond_to_familiar_face', {
-    p_id: id,
-    p_accept: accept,
-  });
-  if (error) throw error;
-  return Boolean((data as { mutual?: boolean } | null)?.mutual);
+  const res = await api.post<{ mutual?: boolean }>(`/familiar-faces/${id}/respond`, { accept });
+  return Boolean(res?.mutual);
+}
+
+/** Gemini opening lines. The server only answers once both people said yes. */
+export async function fetchOpeners(id: string): Promise<string[]> {
+  const res = await api.get<{ openers: string[] }>(`/me/familiar-faces/${id}/openers`);
+  return res.openers ?? [];
 }
 
 export type FaceState = 'pending' | 'waiting_on_them' | 'mutual';

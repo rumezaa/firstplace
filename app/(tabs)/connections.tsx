@@ -5,7 +5,7 @@ import { RefreshControl, View } from 'react-native';
 import type { FamiliarFaceCard } from '@/lib/database.types';
 import { faceDetail, faceHeadline, faceState, fetchFamiliarFaces, respondToFamiliarFace } from '@/lib/familiarFaces';
 import { relativeDay } from '@/lib/format';
-import { errorMessage } from '@/lib/supabase';
+import { errorMessage } from '@/lib/api';
 import { useAsync } from '@/hooks/useAsync';
 import { useSession } from '@/providers/SessionProvider';
 import {

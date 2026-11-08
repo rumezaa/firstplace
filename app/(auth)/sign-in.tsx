@@ -1,33 +1,26 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { APP_NAME, APP_PITCH, APP_TAGLINE } from '@/lib/branding';
-import { errorMessage } from '@/lib/supabase';
+import { errorMessage } from '@/lib/api';
+import { Body, Button, Caption, Card, ErrorNote, Screen, SectionTitle, Title } from '@/components/ui';
 import {
-  Body,
-  Button,
-  Caption,
-  Card,
-  ErrorNote,
-  Screen,
-  SectionTitle,
-  Title,
-} from '@/components/ui';
-import { DEMO_ACCOUNT_AVAILABLE, useSession } from '@/providers/SessionProvider';
+  AUTH0_AVAILABLE,
+  AUTH0_REDIRECT_URI,
+  DEMO_ACCOUNT_AVAILABLE,
+  useSession,
+} from '@/providers/SessionProvider';
 
 export default function SignIn() {
-  const { session, pendingEmail, sendMagicLink, verifyEmailCode, signInWithDemoAccount } =
-    useSession();
+  const { session, signInWithAuth0, signInWithDemoAccount } = useSession();
 
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState<null | 'link' | 'code' | 'demo'>(null);
+  const [busy, setBusy] = useState<null | 'auth0' | 'demo'>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (session) return <Redirect href="/" />;
 
-  async function run(kind: 'link' | 'code' | 'demo', fn: () => Promise<void>) {
+  async function run(kind: 'auth0' | 'demo', fn: () => Promise<void>) {
     setBusy(kind);
     setError(null);
     try {
@@ -50,54 +43,22 @@ export default function SignIn() {
         <SectionTitle>Sign in</SectionTitle>
         <Body>{APP_PITCH}</Body>
 
-        <View className="gap-2">
-          <Caption>Email</Caption>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor="#A1897A"
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            accessibilityLabel="Email address"
-            className="bg-cream border-border-warm text-espresso rounded-tile border px-4 py-3 text-base"
-            style={{ minHeight: 48 }}
+        {AUTH0_AVAILABLE ? (
+          <Button
+            label="Continue"
+            accessibilityHint="Opens a secure sign-in page. You can use Google or your email."
+            busy={busy === 'auth0'}
+            onPress={() => run('auth0', signInWithAuth0)}
           />
-        </View>
+        ) : (
+          <Caption>
+            Secure sign-in (Auth0) isn&apos;t set up yet. Add EXPO_PUBLIC_AUTH0_DOMAIN,
+            EXPO_PUBLIC_AUTH0_CLIENT_ID and EXPO_PUBLIC_AUTH0_AUDIENCE to .env.
+          </Caption>
+        )}
 
-        <Button
-          label={pendingEmail ? 'Send another link' : 'Email me a link'}
-          busy={busy === 'link'}
-          disabled={email.trim().length < 3}
-          onPress={() => run('link', () => sendMagicLink(email))}
-        />
-
-        {pendingEmail ? (
-          <View className="border-border-warm gap-3 border-t pt-4">
-            <Caption>
-              Sent to {pendingEmail}. Tap the link in the email, or type the 6-digit code from it
-              here.
-            </Caption>
-            <TextInput
-              value={code}
-              onChangeText={setCode}
-              placeholder="123456"
-              placeholderTextColor="#A1897A"
-              keyboardType="number-pad"
-              maxLength={6}
-              accessibilityLabel="Six digit code from your email"
-              className="bg-cream border-border-warm text-espresso rounded-tile border px-4 py-3 text-center text-2xl tracking-[8px]"
-              style={{ minHeight: 48 }}
-            />
-            <Button
-              label="Confirm code"
-              variant="secondary"
-              busy={busy === 'code'}
-              disabled={code.trim().length < 6}
-              onPress={() => run('code', () => verifyEmailCode(code))}
-            />
-          </View>
+        {__DEV__ && AUTH0_AVAILABLE ? (
+          <Caption>Auth0 callback URL for this device: {AUTH0_REDIRECT_URI}</Caption>
         ) : null}
       </Card>
 
@@ -105,8 +66,8 @@ export default function SignIn() {
         <Card accent="amber" className="gap-3">
           <SectionTitle>Demo account</SectionTitle>
           <Caption>
-            Signs in as the seeded account, so a demo never waits on an email. Remove
-            EXPO_PUBLIC_DEMO_EMAIL from .env to hide this.
+            Signs in as the seeded demo user, so a live demo never depends on a sign-in page.
+            Remove EXPO_PUBLIC_DEMO_EMAIL from .env to hide this.
           </Caption>
           <Button
             label="Continue as demo user"

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 
 /** How often the kiosk mints a new code. The brief asks for 30 seconds. */
 export const KIOSK_ROTATE_SECONDS = 30;
@@ -9,7 +9,7 @@ export const KIOSK_ROTATE_SECONDS = 30;
  * KIOSK_ROTATE_SECONDS or people will see "that code has expired" for no
  * apparent reason.
  */
-export const KIOSK_CODE_TTL_SECONDS = 60;
+export const KIOSK_CODE_TTL_SECONDS = 45; // project doc: rotate 30s, expire 45s
 
 export interface KioskCode {
   code: string;
@@ -17,12 +17,9 @@ export interface KioskCode {
 }
 
 export async function rotateKioskCode(venueId: string): Promise<KioskCode> {
-  const { data, error } = await supabase.rpc('rotate_kiosk_code', {
-    p_venue_id: venueId,
-    p_ttl_seconds: KIOSK_CODE_TTL_SECONDS,
+  const row = await api.post<{ code: string; expires_at: string }>(`/kiosk/${venueId}/code`, {
+    ttlSeconds: KIOSK_CODE_TTL_SECONDS,
   });
-  if (error) throw error;
-  const row = data as { code: string; expires_at: string };
   return { code: row.code, expiresAt: row.expires_at };
 }
 
@@ -55,10 +52,11 @@ export type VenueDashboard = VenueDashboardSuppressed | VenueDashboardData;
  * sent them.
  */
 export async function fetchVenueDashboard(venueId: string, days = 30): Promise<VenueDashboard> {
-  const { data, error } = await supabase.rpc('venue_dashboard', {
-    p_venue_id: venueId,
-    p_days: days,
-  });
-  if (error) throw error;
-  return data as unknown as VenueDashboard;
+  return api.get<VenueDashboard>(`/dashboard/${venueId}?days=${days}`);
+}
+
+/** Gemini tip for the owner, from the same aggregates. Null when suppressed. */
+export async function fetchDashboardInsight(venueId: string): Promise<string | null> {
+  const res = await api.get<{ insight: string | null }>(`/dashboard/${venueId}/insight`);
+  return res.insight;
 }

@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 import type { Checkin } from './database.types';
 
 /** Matches the `hint` tokens raised by public.check_in(). */
@@ -22,32 +22,17 @@ export async function checkIn(args: {
   tableId: string;
   openToChat: boolean;
 }): Promise<CheckInResult> {
-  const { data, error } = await supabase.rpc('check_in', {
-    p_code: args.code,
-    p_table_id: args.tableId,
-    p_open_to_chat: args.openToChat,
-  });
-  if (error) throw error;
-  return data as unknown as CheckInResult;
+  return api.post<CheckInResult>('/checkins', args);
 }
 
 export async function checkOut(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('check_out');
-  if (error) throw error;
-  return Boolean((data as { checked_out?: boolean } | null)?.checked_out);
+  const res = await api.post<{ checked_out?: boolean }>('/checkins/checkout');
+  return Boolean(res?.checked_out);
 }
 
 /** The user's open session, if they have one. */
 export async function fetchOpenCheckin(): Promise<Checkin | null> {
-  const { data, error } = await supabase
-    .from('checkins')
-    .select('*')
-    .is('checked_out_at', null)
-    .order('checked_in_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+  return api.get<Checkin | null>('/me/checkins/open');
 }
 
 export interface CheckinHistoryRow extends Checkin {
@@ -56,34 +41,18 @@ export interface CheckinHistoryRow extends Checkin {
 }
 
 export async function fetchCheckinHistory(limit = 30): Promise<CheckinHistoryRow[]> {
-  const { data, error } = await supabase
-    .from('checkins')
-    .select('*, venues(name), tables(label, is_chat_table)')
-    .order('checked_in_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data ?? []) as unknown as CheckinHistoryRow[];
+  return api.get<CheckinHistoryRow[]>(`/me/checkins?limit=${limit}`);
 }
 
 export async function setOpenToChat(checkinId: string, openToChat: boolean): Promise<void> {
-  const { error } = await supabase
-    .from('checkins')
-    .update({ open_to_chat: openToChat })
-    .eq('id', checkinId);
-  if (error) throw error;
+  await api.patch(`/checkins/${checkinId}`, { openToChat });
 }
 
 /**
- * Nudge the 3-hour auto check-out along.
- *
- * The aggregate views already ignore sessions older than 3 hours, so counts
- * are right either way; this is what frees the table rows. Once pg_cron is
- * scheduled (see migration 0400) this call can go away.
+ * The 3-hour auto check-out now runs on the server every 5 minutes
+ * (server/src/jobs.ts). Kept as a no-op so existing callers don't change.
  */
-export async function sweepStaleCheckins(): Promise<void> {
-  const { error } = await supabase.rpc('auto_checkout_stale');
-  if (error && __DEV__) console.warn('[checkins] stale sweep failed', error.message);
-}
+export async function sweepStaleCheckins(): Promise<void> {}
 
 // --------------------------------------------------------- QR code payload ---
 
@@ -95,7 +64,7 @@ export async function sweepStaleCheckins(): Promise<void> {
  * by hand, or a QR library hands back just the code, that still works.
  */
 export function kioskQrPayload(venueId: string, code: string): string {
-  return `thirdplace://checkin?venue=${venueId}&code=${code}`;
+  return `firstplace://checkin?venue=${venueId}&code=${code}`;
 }
 
 export function parseKioskQr(raw: string): { code: string; venueId: string | null } | null {

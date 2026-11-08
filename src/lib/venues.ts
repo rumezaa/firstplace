@@ -1,55 +1,36 @@
-import { supabase } from './supabase';
+import { ApiError, api } from './api';
 import type { BusyHour, CrowdTag, Venue, VenueLive, VenueTable } from './database.types';
 
 export async function fetchVenues(): Promise<Venue[]> {
-  const { data, error } = await supabase.from('venues').select('*').order('name');
-  if (error) throw error;
-  return data ?? [];
+  return api.get<Venue[]>('/venues');
 }
 
 export async function fetchVenueLive(): Promise<Record<string, VenueLive>> {
-  const { data, error } = await supabase.from('venue_live').select('*');
-  if (error) throw error;
+  const rows = await api.get<VenueLive[]>('/venues/live');
   const byId: Record<string, VenueLive> = {};
-  for (const row of data ?? []) byId[row.venue_id] = row;
+  for (const row of rows) byId[row.venue_id] = row;
   return byId;
 }
 
 export async function fetchVenue(id: string): Promise<Venue | null> {
-  const { data, error } = await supabase.from('venues').select('*').eq('id', id).maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    return await api.get<Venue>(`/venues/${id}`);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
 }
 
 export async function fetchVenueLiveOne(id: string): Promise<VenueLive | null> {
-  const { data, error } = await supabase
-    .from('venue_live')
-    .select('*')
-    .eq('venue_id', id)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+  return api.get<VenueLive | null>(`/venues/${id}/live`);
 }
 
 export async function fetchTables(venueId: string): Promise<VenueTable[]> {
-  const { data, error } = await supabase
-    .from('tables')
-    .select('*')
-    .eq('venue_id', venueId)
-    .order('is_chat_table', { ascending: false })
-    .order('label');
-  if (error) throw error;
-  return data ?? [];
+  return api.get<VenueTable[]>(`/venues/${venueId}/tables`);
 }
 
 export async function fetchBusyHours(venueId: string): Promise<BusyHour[]> {
-  const { data, error } = await supabase
-    .from('venue_busy_hours')
-    .select('*')
-    .eq('venue_id', venueId)
-    .order('hour_of_day');
-  if (error) throw error;
-  return data ?? [];
+  return api.get<BusyHour[]>(`/venues/${venueId}/busy-hours`);
 }
 
 /**
@@ -57,20 +38,21 @@ export async function fetchBusyHours(venueId: string): Promise<BusyHour[]> {
  * than 3 recent visitors, so there is nothing further to filter here.
  */
 export async function fetchCrowdTags(venueId: string): Promise<CrowdTag[]> {
-  const { data, error } = await supabase
-    .from('venue_crowd_tags')
-    .select('*')
-    .eq('venue_id', venueId)
-    .order('people', { ascending: false })
-    .limit(5);
-  if (error) throw error;
-  return data ?? [];
+  return api.get<CrowdTag[]>(`/venues/${venueId}/crowd-tags`);
 }
 
 /** Staff tapping a tile on the kiosk grid. */
 export async function setTableStatus(tableId: string, status: 'open' | 'taken'): Promise<void> {
-  const { error } = await supabase.from('tables').update({ status }).eq('id', tableId);
-  if (error) throw error;
+  await api.patch(`/tables/${tableId}`, { status });
+}
+
+/**
+ * Gemini's "what it's like inside right now", written from the same aggregate
+ * counts everyone can already see. Falls back to the venue's insider info.
+ */
+export async function fetchVenueVibe(venueId: string): Promise<string | null> {
+  const res = await api.get<{ vibe: string | null }>(`/venues/${venueId}/vibe`);
+  return res.vibe;
 }
 
 // ---------------------------------------------------------------- filters ----

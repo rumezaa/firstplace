@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { kioskQrPayload } from '@/lib/checkins';
 import { KIOSK_ROTATE_SECONDS, rotateKioskCode, type KioskCode } from '@/lib/kiosk';
-import { errorMessage } from '@/lib/supabase';
+import { errorMessage } from '@/lib/api';
 import { MIN_TAP_TARGET, colors } from '@/lib/theme';
 import { fetchTables, fetchVenue, setTableStatus } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';

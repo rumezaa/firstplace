@@ -1,12 +1,11 @@
 /**
  * The one place the app's name lives.
  *
- * TODO(name): the brief said "[APP NAME]". "Third Place" is a placeholder.
- * To rename, change APP_NAME here and then three values in app.json:
- * expo.name, expo.slug and expo.scheme (the scheme is what magic-link
- * redirects come back to, so it has to match what you register in Supabase).
+ * To rename, change APP_NAME here and three values in app.json: expo.name,
+ * expo.slug and expo.scheme. The scheme is part of the Auth0 callback URL
+ * (firstplace://...), so a new scheme must also be added in Auth0.
  */
-export const APP_NAME = 'Third Place';
+export const APP_NAME = 'FirstPlace';
 
 export const APP_TAGLINE = 'Find somewhere to be, not just somewhere to sit.';
 

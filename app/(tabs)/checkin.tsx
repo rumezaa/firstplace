@@ -14,7 +14,7 @@ import {
 } from '@/lib/checkins';
 import type { Venue, VenueTable } from '@/lib/database.types';
 import { timeOfDay } from '@/lib/format';
-import { errorMessage } from '@/lib/supabase';
+import { errorMessage } from '@/lib/api';
 import { MIN_TAP_TARGET } from '@/lib/theme';
 import { fetchTables, fetchVenue, fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';

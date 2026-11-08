@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Third Place",
-    "slug": "thirdplace",
-    "scheme": "thirdplace",
+    "name": "FirstPlace",
+    "slug": "firstplace",
+    "scheme": "firstplace",
     "version": "0.1.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -10,13 +10,13 @@
     "ios": {
       "supportsTablet": true,
       "requireFullScreen": true,
-      "bundleIdentifier": "com.thirdplace.app",
+      "bundleIdentifier": "com.firstplace.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Third Place uses the camera to scan the QR code at a cafe so you can check in to a table."
+        "NSCameraUsageDescription": "FirstPlace uses the camera to scan the QR code at a cafe so you can check in to a table."
       }
     },
     "android": {
-      "package": "com.thirdplace.app",
+      "package": "com.firstplace.app",
       "adaptiveIcon": {
         "backgroundColor": "#FBF7F1",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,7 +38,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Third Place uses the camera to scan the QR code at a cafe so you can check in to a table."
+          "cameraPermission": "FirstPlace uses the camera to scan the QR code at a cafe so you can check in to a table."
         }
       ],
       "expo-font",

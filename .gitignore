@@ -42,3 +42,6 @@ yarn-error.*
 
 # local env files
 .env
+
+# old Supabase credentials kept locally
+.env.*backup

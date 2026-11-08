@@ -5,8 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider, useSession } from '@/providers/SessionProvider';
-import { Loading, Screen, SupabaseNotConfigured } from '@/components/ui';
-import { isSupabaseConfigured, supabaseConfigProblem } from '@/lib/supabase';
+import { ApiNotConfigured, Loading, Screen } from '@/components/ui';
+import { apiConfigProblem, isApiConfigured } from '@/lib/api';
 import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
@@ -24,7 +24,7 @@ function RootNavigator() {
   const { initializing } = useSession();
 
   // A fresh clone with no .env would otherwise show a stack of network errors.
-  if (!isSupabaseConfigured) return <SupabaseNotConfigured problem={supabaseConfigProblem} />;
+  if (!isApiConfigured) return <ApiNotConfigured problem={apiConfigProblem} />;
 
   if (initializing) {
     return (

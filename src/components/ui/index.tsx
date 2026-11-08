@@ -348,25 +348,18 @@ export function ProgressBar({
 
 /* ------------------------------------------------------------- Setup gate -- */
 
-export function SupabaseNotConfigured({ problem }: { problem?: string | null }) {
+export function ApiNotConfigured({ problem }: { problem?: string | null }) {
   return (
     <Screen>
       <Title>Almost there</Title>
       <Card accent="amber" className="gap-3">
-        <SectionTitle>Connect Supabase first</SectionTitle>
+        <SectionTitle>Point the app at the API</SectionTitle>
         {problem ? <Body>{problem}</Body> : null}
         <Caption>
-          1. Supabase dashboard → Project Settings → API{'\n'}
-          2. Copy the Project URL into EXPO_PUBLIC_SUPABASE_URL in .env{'\n'}
-          3. Copy the anon / public key into EXPO_PUBLIC_SUPABASE_ANON_KEY{'\n'}
-          4. Stop the server and run: npm run start:clear
-        </Caption>
-      </Card>
-      <Card className="gap-2">
-        <SectionTitle>Why the restart</SectionTitle>
-        <Caption>
-          EXPO_PUBLIC_ vars are baked into the bundle when it is built, so saving .env and
-          reloading the app is not enough — Metro has to rebuild with the new values.
+          1. Start the API server: cd server && npm run dev{'\n'}
+          2. In development the app finds it automatically on port 8787{'\n'}
+          3. For a deployed server, set EXPO_PUBLIC_API_URL in .env{'\n'}
+          4. Stop Expo and run: npm run start:clear
         </Caption>
       </Card>
     </Screen>

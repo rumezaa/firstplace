@@ -46,6 +46,9 @@ export async function icebreakers(args: {
 }): Promise<{ lines: string[]; status: AiStatus; retryAfterSec?: number }> {
   const { shared, venue, count, mode } = args;
   const terms = [...(shared.interests ?? []), ...(shared.topics ?? [])];
+  // Nothing shared (or one of them switched "Show what we have in common" off):
+  // send nothing to Gemini; callers fall back to generic prompts.
+  if (terms.length === 0) return { lines: [], status: 'off' };
   const nearby = venue ? retrieve({ lat: venue.lat, lng: venue.lng, terms, k: 3, radiusKm: 1.5 }) : [];
 
   const prompt = [

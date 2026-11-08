@@ -12,7 +12,7 @@ me.use('*', requireAuth);
 
 const PROFILE_FIELDS = [
   'name', 'interests', 'vibe_tags', 'incognito', 'familiar_faces_opt_in',
-  'languages', 'topics', 'comm_pref', 'share_comm_pref', 'age_range',
+  'languages', 'topics', 'comm_pref', 'share_comm_pref', 'share_overlap', 'age_range',
 ] as const;
 
 me.get('/', async (c) => {

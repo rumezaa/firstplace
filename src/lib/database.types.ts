@@ -32,6 +32,7 @@ export type Database = {
           vibe_tags: string[];
           incognito: boolean;
           familiar_faces_opt_in: boolean;
+          share_overlap: boolean;
           created_at: string;
         };
         Insert: {
@@ -41,6 +42,7 @@ export type Database = {
           vibe_tags?: string[];
           incognito?: boolean;
           familiar_faces_opt_in?: boolean;
+          share_overlap?: boolean;
           created_at?: string;
         };
         Update: {
@@ -50,6 +52,7 @@ export type Database = {
           vibe_tags?: string[];
           incognito?: boolean;
           familiar_faces_opt_in?: boolean;
+          share_overlap?: boolean;
         };
         Relationships: [];
       };

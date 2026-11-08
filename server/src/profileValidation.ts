@@ -7,7 +7,7 @@ export function profileProblem(body: unknown): string | null {
   }
   const ages = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
   if ('age_range' in fields && !ages.includes(fields.age_range as string)) return 'Choose an age range. FirstPlace is for adults 18 and older.';
-  for (const key of ['incognito', 'familiar_faces_opt_in', 'share_comm_pref']) {
+  for (const key of ['incognito', 'familiar_faces_opt_in', 'share_comm_pref', 'share_overlap']) {
     if (key in fields && typeof fields[key] !== 'boolean') return `${key} must be true or false.`;
   }
   for (const key of ['interests', 'topics', 'languages', 'vibe_tags']) {

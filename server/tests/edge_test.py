@@ -114,6 +114,24 @@ ok(req('PATCH', '/me', {'age_range': '16-17'}, T['wei'])[0] == 400, 'under-18 ag
 ok(req('PATCH', '/me', {'name': ''}, T['wei'])[0] == 400, 'empty name is rejected')
 ok(req('PATCH', '/me', {'interests': ['x'] * 31}, T['wei'])[0] == 400, 'more than 30 interests is rejected')
 
+# ------------------------------------------------ "Show what we have in common"
+for t in T.values():
+    req('POST', '/me/leave-now', tok=t)
+req('POST', f'/tables/{CEN}/claim', {'light': 'green'}, T['wei'])
+req('POST', f'/tables/{CEN}/join', tok=T['priya'])
+on = req('GET', '/me/conversation/topics', tok=T['priya'])[1]
+ok(any(on['shared'].values()), f"sharing on: the pair sees their overlap ({on['shared']})")
+for t in (T['wei'], T['priya']):
+    req('POST', '/me/leave-now', tok=t)
+ok(req('PATCH', '/me', {'share_overlap': 'no'}, T['wei'])[0] == 400, 'share_overlap must be true/false')
+ok(req('PATCH', '/me', {'share_overlap': False}, T['wei'])[0] == 200, 'Wei switches sharing off')
+req('POST', f'/tables/{CEN}/claim', {'light': 'green'}, T['wei'])
+req('POST', f'/tables/{CEN}/join', tok=T['priya'])
+off = req('GET', '/me/conversation/topics', tok=T['priya'])[1]
+ok(not any(off['shared'].values()), "one person off: the OTHER person sees nothing shared either")
+ok(off['generated'] is False and off['prompts'], 'one person off: nothing goes to Gemini, generic prompts instead')
+req('PATCH', '/me', {'share_overlap': True}, T['wei'])
+
 for t in T.values():
     req('POST', '/me/leave-now', tok=t)
 ok(all(light(t) == 'off' for t in (WIN, CEN, STK)), 'everyone left: the whole floor is off')

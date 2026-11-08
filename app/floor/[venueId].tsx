@@ -1,9 +1,10 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, Text, View } from 'react-native';
+import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 import { LIGHT_INFO, fetchFloor, type BoxLight, type FloorTable } from '@/lib/conversations';
-import { FLOOR_LAYOUTS, type FloorLayout } from '@/lib/floorLayouts';
+import { FLOOR_LAYOUTS, type FloorLayout, type FloorPlan } from '@/lib/floorLayouts';
 import { fetchVenue } from '@/lib/venues';
 import { colors } from '@/lib/theme';
 import { useAsync } from '@/hooks/useAsync';
@@ -134,19 +135,23 @@ function FloorMap({
         // Phone-sized on laptops and tablets too, so the whole floor fits on screen.
         maxWidth: 440,
         alignSelf: 'center',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-        overflow: 'hidden',
+        // A real plan floats on the page like a printed map; the schematic gets a card.
+        ...(layout.plan
+          ? {}
+          : { borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' as const }),
       }}
     >
-      {/* West windows along the left edge; north arrow top right */}
-      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 5, backgroundColor: colors.claySoft }} />
-      <Text style={{ position: 'absolute', top: 6, right: 8, fontSize: 11, fontWeight: '700', color: colors.mocha }}>N ↑</Text>
-      <View
-        style={{ position: 'absolute', top: 0, bottom: 0, left: pct(layout.corridor.x), width: pct(layout.corridor.w), backgroundColor: colors.cream }}
-      />
+      {layout.plan ? (
+        <PlanDrawing plan={layout.plan} labels={layout.labels ?? []} />
+      ) : (
+        <>
+          <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 5, backgroundColor: colors.claySoft }} />
+          <View
+            style={{ position: 'absolute', top: 0, bottom: 0, left: pct(layout.corridor.x), width: pct(layout.corridor.w), backgroundColor: colors.cream }}
+          />
+        </>
+      )}
+      <Text style={{ position: 'absolute', top: 2, right: 2, fontSize: 11, fontWeight: '700', color: colors.mocha }}>N ↑</Text>
       {layout.zones.map((z) => (
         <View
           key={z.label}
@@ -170,6 +175,60 @@ function FloorMap({
         return <TableMarker key={t.id} table={t} x={spot.x} y={spot.y} selected={selectedId === t.id} onPress={() => onSelect(t)} />;
       })}
     </View>
+  );
+}
+
+/**
+ * The traced building in FirstPlace's palette: a soft shadow, white floor,
+ * rooms in warm grey, corridors in a pale teal wash, stairs and elevators in
+ * the accent, washrooms muted. Area names sit on top, quietly.
+ */
+function PlanDrawing({ plan, labels }: { plan: FloorPlan; labels: { text: string; x: number; y: number }[] }) {
+  return (
+    <Svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${plan.w} ${plan.h}`}
+      preserveAspectRatio="none"
+      style={{ position: 'absolute', top: 0, left: 0 }}
+      // Decoration only: the markers and the list carry everything for screen readers.
+      pointerEvents="none"
+      importantForAccessibility="no-hide-descendants"
+    >
+      {/* Shadow, then the floor and its wall */}
+      <Path d={plan.outline} fill="#000" opacity={0.06} transform="translate(4 6)" />
+      <Path d={plan.outline} fill={colors.surface} stroke={colors.espresso} strokeWidth={3} strokeLinejoin="round" />
+      <G>
+        {plan.corridors.map((d, i) => (
+          <Path key={`c${i}`} d={d} fill={colors.claySoft} />
+        ))}
+        {plan.rooms.map((d, i) => (
+          <Path key={`r${i}`} d={d} fill={colors.sunk} stroke="#D8D8D2" strokeWidth={1} strokeLinejoin="round" />
+        ))}
+        {plan.washrooms.map((d, i) => (
+          <Path key={`w${i}`} d={d} fill="#DCDCD6" />
+        ))}
+        {plan.stairs.map((d, i) => (
+          <Path key={`s${i}`} d={d} fill={colors.clay} opacity={0.25} />
+        ))}
+        {plan.elevators.map((d, i) => (
+          <Path key={`e${i}`} d={d} fill={colors.clay} opacity={0.5} />
+        ))}
+      </G>
+      {labels.map((l) => (
+        <SvgText
+          key={l.text}
+          x={l.x * plan.w}
+          y={l.y * plan.h}
+          fontSize={15}
+          fontWeight="600"
+          fill={colors.mocha}
+          textAnchor="middle"
+        >
+          {l.text}
+        </SvgText>
+      ))}
+    </Svg>
   );
 }
 

@@ -1,3 +1,5 @@
+import { TFDL3_PLAN } from './floorPlans/tfdl3';
+
 /**
  * Floor outlines for the NFC floor view (docs/specs/2026-11-08-floor-map-design.md).
  * Our own simplified drawing, never the university's floor plan. Everything is
@@ -11,7 +13,23 @@ export interface Zone {
   h: number;
 }
 
+/** A traced floor plan (scripts/trace_floor.py): SVG paths in a w x h viewBox. */
+export interface FloorPlan {
+  w: number;
+  h: number;
+  outline: string;
+  rooms: readonly string[];
+  corridors: readonly string[];
+  elevators: readonly string[];
+  stairs: readonly string[];
+  washrooms: readonly string[];
+}
+
 export interface FloorLayout {
+  /** Real building geometry. When present it's drawn instead of the zone boxes. */
+  plan?: FloorPlan;
+  /** Area names drawn on the plan, at 0..1 positions. */
+  labels?: { text: string; x: number; y: number }[];
   /** Width / height of the outline; portrait so it fills a phone. */
   aspect: number;
   zones: Zone[];
@@ -27,29 +45,21 @@ export interface FloorLayout {
 }
 
 export const FLOOR_LAYOUTS: Record<string, FloorLayout> = {
-  // TFDL · 3rd floor. Traced from the floor 3 plan and drawn upright: north at
-  // the top, the west windows on the left, the long corridor down the middle.
+  // TFDL · 3rd floor, traced from the university's floor 3 plan (north at top).
   'c0ffee00-0000-4000-8000-0000000000f3': {
-    aspect: 0.56,
-    zones: [
-      { label: '350 · 351 North lounge', x: 0.04, y: 0.015, w: 0.92, h: 0.085 },
-      { label: '352 Study', x: 0.04, y: 0.11, w: 0.38, h: 0.14 },
-      { label: '354 Open study', x: 0.04, y: 0.265, w: 0.38, h: 0.32 },
-      { label: '340 Open study', x: 0.04, y: 0.6, w: 0.38, h: 0.13 },
-      { label: '330 Study rooms', x: 0.04, y: 0.745, w: 0.38, h: 0.2 },
-      { label: '350s · 360s Rooms', x: 0.58, y: 0.11, w: 0.38, h: 0.1 },
-      { label: '364 Study', x: 0.58, y: 0.22, w: 0.38, h: 0.12 },
-      { label: '368 Group rooms', x: 0.58, y: 0.35, w: 0.38, h: 0.22 },
-      { label: 'Stairs · elevators', x: 0.58, y: 0.585, w: 0.38, h: 0.085 },
-      { label: '310 · 316 · 320', x: 0.58, y: 0.685, w: 0.38, h: 0.26 },
+    plan: TFDL3_PLAN,
+    aspect: TFDL3_PLAN.w / TFDL3_PLAN.h,
+    labels: [
+      { text: 'North lounge', x: 0.62, y: 0.03 },
+      { text: '354 Open study', x: 0.22, y: 0.255 },
+      { text: '340 Open study', x: 0.22, y: 0.665 },
+      { text: '330 Study', x: 0.18, y: 0.82 },
+      { text: 'Group rooms', x: 0.8, y: 0.47 },
     ],
-    corridor: { x: 0.44, w: 0.12 },
-    // The south stairs and elevators, where the NFC tag is.
-    entrance: { x: 0.5, y: 0.63 },
-    defaultSpots: [
-      { x: 0.12, y: 0.33 },
-      { x: 0.3, y: 0.43 },
-      { x: 0.14, y: 0.53 },
-    ],
+    zones: [],
+    corridor: { x: 0, w: 0 },
+    // South stairs and elevators, where the NFC tag is.
+    entrance: { x: 0.6, y: 0.79 },
+    defaultSpots: [],
   },
 };

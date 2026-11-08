@@ -30,7 +30,8 @@ interface SessionContextValue {
   /** True until the stored session has been read from disk. */
   initializing: boolean;
 
-  signInWithAuth0: () => Promise<Auth0Outcome>;
+  /** `signUp` opens Auth0 on its create-account screen instead of log in. */
+  signInWithAuth0: (opts?: { signUp?: boolean }) => Promise<Auth0Outcome>;
   signInWithDemoAccount: () => Promise<void>;
   signOut: () => Promise<void>;
 
@@ -62,14 +63,14 @@ interface PreparedAuth {
  */
 export type Auth0Outcome = 'signed-in' | 'dismissed';
 
-async function prepareAuth0(): Promise<PreparedAuth> {
+async function prepareAuth0(signUp = false): Promise<PreparedAuth> {
   const discovery = await AuthSession.fetchDiscoveryAsync(`https://${AUTH0_DOMAIN}`);
   const request = new AuthSession.AuthRequest({
     clientId: AUTH0_CLIENT_ID,
     redirectUri: AUTH0_REDIRECT_URI,
     scopes: ['openid', 'profile', 'email'],
     usePKCE: true,
-    extraParams: { audience: AUTH0_AUDIENCE },
+    extraParams: { audience: AUTH0_AUDIENCE, ...(signUp ? { screen_hint: 'signup' } : {}) },
   });
   await request.makeAuthUrlAsync(discovery); // cached on the request; promptAsync reuses it
   return { discovery, request };
@@ -81,8 +82,8 @@ async function prepareAuth0(): Promise<PreparedAuth> {
  * domain) would otherwise surface as an unhandled rejection. The real error
  * still reaches the caller, because sign-in awaits the same promise.
  */
-function preloadAuth0(): Promise<PreparedAuth> {
-  const pending = prepareAuth0();
+function preloadAuth0(signUp = false): Promise<PreparedAuth> {
+  const pending = prepareAuth0(signUp);
   pending.catch(() => undefined);
   return pending;
 }
@@ -191,16 +192,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Build the Auth0 request (discovery + PKCE + URL) BEFORE the tap. Browsers
   // only allow the sign-in popup if it opens right after the click; any await
   // in between (network, hashing) gets it blocked as "not user-initiated".
+  // One warmed request per screen (log in / create account): the browser only
+  // allows the popup if it opens straight from the tap, with no await first.
   const prepared = useRef<Promise<PreparedAuth> | null>(null);
+  const preparedSignUp = useRef<Promise<PreparedAuth> | null>(null);
   useEffect(() => {
-    if (AUTH0_AVAILABLE) prepared.current = preloadAuth0();
+    if (!AUTH0_AVAILABLE) return;
+    prepared.current = preloadAuth0();
+    preparedSignUp.current = preloadAuth0(true);
   }, []);
 
-  const signInWithAuth0 = useCallback(async (): Promise<Auth0Outcome> => {
+  const signInWithAuth0 = useCallback(async (opts?: { signUp?: boolean }): Promise<Auth0Outcome> => {
     if (!AUTH0_AVAILABLE) throw new Error('Auth0 is not set up yet. Use the demo account.');
 
-    const { discovery, request } = await (prepared.current ?? prepareAuth0());
-    prepared.current = preloadAuth0(); // each request is single-use: ready the next one
+    const signUp = Boolean(opts?.signUp);
+    const slot = signUp ? preparedSignUp : prepared;
+    const { discovery, request } = await (slot.current ?? prepareAuth0(signUp));
+    slot.current = preloadAuth0(signUp); // each request is single-use: ready the next one
 
     const result = await request.promptAsync(discovery);
     if (result.type === 'cancel' || result.type === 'dismiss') return 'dismissed';

@@ -14,13 +14,13 @@ import { DEMO_ACCOUNT_AVAILABLE, useSession } from '@/providers/SessionProvider'
 /** Welcome (design kit v2, 2.1): logo, the lit pole, one instruction, sign in. */
 export default function SignIn() {
   const { session, signInWithAuth0, signInWithDemoAccount } = useSession();
-  const [busy, setBusy] = useState<null | 'auth0' | 'demo'>(null);
+  const [busy, setBusy] = useState<null | 'auth0' | 'signup' | 'demo'>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   if (session) return <Redirect href="/" />;
 
-  async function run(kind: 'auth0' | 'demo', fn: () => Promise<unknown>) {
+  async function run(kind: 'auth0' | 'signup' | 'demo', fn: () => Promise<unknown>) {
     setBusy(kind);
     setError(null);
     setNote(null);
@@ -37,8 +37,8 @@ export default function SignIn() {
   // URL mismatch" page in the browser and the person closes it, which reaches
   // us as a plain dismissal. So when sign-in ends that way, say what to check
   // rather than leaving the screen looking like nothing happened.
-  async function startAuth0() {
-    const outcome = await signInWithAuth0();
+  async function startAuth0(signUp = false) {
+    const outcome = await signInWithAuth0({ signUp });
     if (outcome === 'dismissed') setNote(auth0CallbackMismatchHelp());
   }
 
@@ -80,10 +80,19 @@ export default function SignIn() {
       <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24, gap: 8 }}>
         {AUTH0_AVAILABLE ? (
           <Button
-            label="Get started"
-            accessibilityHint="Opens a secure sign-in page. You can use Google or your email."
+            label="Create an account"
+            accessibilityHint="Opens a secure sign-up page. You can use Google or your email."
+            busy={busy === 'signup'}
+            onPress={() => run('signup', () => startAuth0(true))}
+          />
+        ) : null}
+        {AUTH0_AVAILABLE ? (
+          <Button
+            label="I already have an account"
+            variant="secondary"
+            accessibilityHint="Opens a secure sign-in page."
             busy={busy === 'auth0'}
-            onPress={() => run('auth0', startAuth0)}
+            onPress={() => run('auth0', () => startAuth0())}
           />
         ) : null}
         {DEMO_ACCOUNT_AVAILABLE ? (

@@ -8,6 +8,7 @@ import { errorMessage } from '@/lib/api';
 import {
   LIGHT_INFO,
   claimTable,
+  fetchConversation,
   fetchIncomingRequests,
   fetchTableView,
   joinGreen,
@@ -132,7 +133,21 @@ export default function TableScreen() {
                 busy={busy === 'join'}
                 onPress={() =>
                   run('join', async () => {
-                    await joinGreen(table.id);
+                    try {
+                      await joinGreen(table.id);
+                    } catch (e) {
+                      // Already talking with someone? Take them there instead of a dead end.
+                      const mine = await fetchConversation().catch(() => null);
+                      if (mine && !mine.ended_at) {
+                        router.replace('/conversation');
+                        return;
+                      }
+                      throw new Error(
+                        errorMessage(e) === 'Not available right now.'
+                          ? 'They may have just started talking with someone. Try another green light.'
+                          : errorMessage(e),
+                      );
+                    }
                     router.replace('/conversation');
                   })
                 }

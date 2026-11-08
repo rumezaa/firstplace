@@ -1,21 +1,29 @@
-import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Session } from '@supabase/supabase-js';
 
+import { api, setAccessToken, setUnauthorizedHandler } from '@/lib/api';
 import type { UserProfile, UserProfileUpdate } from '@/lib/database.types';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+
+// Lets the Auth0 browser tab hand control back to the app on web.
+WebBrowser.maybeCompleteAuthSession();
+
+/** What the app needs to know about the signed-in person. */
+export interface Session {
+  token: string;
+  user: { email: string | null; name: string | null };
+  via: 'auth0' | 'demo';
+}
 
 interface SessionContextValue {
   session: Session | null;
   profile: UserProfile | null;
   /** True until the stored session has been read from disk. */
   initializing: boolean;
-  /** Email we last sent a code to, so the sign-in screen can show step 2. */
-  pendingEmail: string | null;
 
-  sendMagicLink: (email: string) => Promise<void>;
-  verifyEmailCode: (code: string) => Promise<void>;
+  signInWithAuth0: () => Promise<void>;
   signInWithDemoAccount: () => Promise<void>;
   signOut: () => Promise<void>;
 
@@ -24,225 +32,189 @@ interface SessionContextValue {
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
+const STORAGE_KEY = 'firstplace.session.v1';
 
-/**
- * The redirect a magic link comes back to.
- *
- * In Expo Go this is an exp:// URL that changes with your LAN address, so it
- * has to be added to Supabase > Authentication > URL Configuration >
- * Redirect URLs each time it changes. That is why the sign-in screen also
- * offers the 6-digit code, which needs no redirect configuration at all, and
- * why the demo account button exists.
- */
-const redirectTo = Linking.createURL('/');
+// ----------------------------------------------------------------- Auth0 ---
+const AUTH0_DOMAIN = process.env.EXPO_PUBLIC_AUTH0_DOMAIN?.trim() ?? '';
+const AUTH0_CLIENT_ID = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID?.trim() ?? '';
+const AUTH0_AUDIENCE = process.env.EXPO_PUBLIC_AUTH0_AUDIENCE?.trim() ?? '';
+
+export const AUTH0_AVAILABLE = Boolean(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE);
+
+/** The URL Auth0 sends you back to. Add it under Allowed Callback URLs. */
+export const AUTH0_REDIRECT_URI = AuthSession.makeRedirectUri({ scheme: 'firstplace' });
+
+/** Demo safety net: the server signs you in as the seeded demo user. */
+const DEMO_EMAIL = process.env.EXPO_PUBLIC_DEMO_EMAIL?.trim() ?? '';
+export const DEMO_ACCOUNT_AVAILABLE = Boolean(DEMO_EMAIL);
+
+interface PreparedAuth {
+  discovery: AuthSession.DiscoveryDocument;
+  request: AuthSession.AuthRequest;
+}
+
+async function prepareAuth0(): Promise<PreparedAuth> {
+  const discovery = await AuthSession.fetchDiscoveryAsync(`https://${AUTH0_DOMAIN}`);
+  const request = new AuthSession.AuthRequest({
+    clientId: AUTH0_CLIENT_ID,
+    redirectUri: AUTH0_REDIRECT_URI,
+    scopes: ['openid', 'profile', 'email'],
+    usePKCE: true,
+    extraParams: { audience: AUTH0_AUDIENCE },
+  });
+  await request.makeAuthUrlAsync(discovery); // cached on the request; promptAsync reuses it
+  return { discovery, request };
+}
+
+/** Reads name/email out of an ID token. Display only; the server verifies tokens. */
+function claimsFromIdToken(idToken?: string): { email: string | null; name: string | null } {
+  try {
+    const payload = idToken?.split('.')[1];
+    if (!payload) return { email: null, name: null };
+    const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return { email: json.email ?? null, name: json.name ?? json.given_name ?? null };
+  } catch {
+    return { email: null, name: null };
+  }
+}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [initializing, setInitializing] = useState(true);
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
-  const userId = session?.user.id ?? null;
-  const loadedProfileFor = useRef<string | null>(null);
-
-  // ---------------------------------------------------------------- session --
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setInitializing(false);
-      return;
+  const applySession = useCallback(async (next: Session | null) => {
+    setAccessToken(next?.token ?? null);
+    setSession(next);
+    if (!next) setProfile(null);
+    try {
+      if (next) await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      else await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      if (__DEV__) console.warn('[auth] could not persist session', e);
     }
+  }, []);
 
+  // ------------------------------------------------------- restore session --
+  useEffect(() => {
     let cancelled = false;
-
-    // .catch matters: if this rejects (unreachable project, no network, DNS
-    // failure) and initializing is never cleared, the app sits on the splash
-    // spinner forever with no clue why. Failing to a signed-out state at least
-    // reaches the sign-in screen, which can report the error.
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setSession(data.session);
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (cancelled || !raw) return;
+        const stored = JSON.parse(raw) as Session;
+        setAccessToken(stored.token);
+        setSession(stored);
       })
       .catch((e: unknown) => {
-        if (__DEV__) {
-          console.warn('[auth] could not read the stored session', e);
-        }
+        if (__DEV__) console.warn('[auth] could not read the stored session', e);
       })
       .finally(() => {
         if (!cancelled) setInitializing(false);
       });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
-      if (!next) {
-        setProfile(null);
-        loadedProfileFor.current = null;
-      }
-    });
-
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
     };
   }, []);
 
-  // Magic links open the app with a token in the URL. On native there is no
-  // page load for supabase-js to inspect, so hand it over ourselves.
-  const incomingUrl = Linking.useURL();
+  // An expired or revoked token: drop back to the sign-in screen.
   useEffect(() => {
-    if (!incomingUrl) return;
-
-    const { queryParams } = Linking.parse(incomingUrl);
-    const tokenHash = queryParams?.token_hash;
-    if (typeof tokenHash !== 'string') return;
-
-    const type = typeof queryParams?.type === 'string' ? queryParams.type : 'magiclink';
-    supabase.auth
-      .verifyOtp({ token_hash: tokenHash, type: type as 'magiclink' })
-      .then(({ error }) => {
-        if (error && __DEV__) console.warn('[auth] magic link verify failed', error.message);
-      });
-  }, [incomingUrl]);
+    setUnauthorizedHandler(() => void applySession(null));
+    return () => setUnauthorizedHandler(null);
+  }, [applySession]);
 
   // ---------------------------------------------------------------- profile --
   const refreshProfile = useCallback(async () => {
-    if (!userId) {
-      setProfile(null);
-      return;
+    if (!session) return; // signing out clears the profile in applySession
+    try {
+      const me = await api.get<UserProfile>('/me');
+      // First Auth0 login: the server created a blank profile. Fill in the name.
+      if (me && !me.name && session.user.name) {
+        setProfile(await api.patch<UserProfile>('/me', { name: session.user.name }));
+        return;
+      }
+      setProfile(me);
+    } catch (e) {
+      if (__DEV__) console.warn('[profile] load failed', e);
     }
+  }, [session]);
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      if (__DEV__) console.warn('[profile] load failed', error.message);
-      return;
-    }
-
-    if (data) {
-      setProfile(data);
-      return;
-    }
-
-    // The on_auth_user_created trigger normally makes this row. If the trigger
-    // is missing (migrations not applied yet) create it so the app still works.
-    const { data: created, error: insertError } = await supabase
-      .from('users')
-      .insert({ id: userId, name: '' })
-      .select()
-      .maybeSingle();
-
-    if (insertError) {
-      if (__DEV__) console.warn('[profile] could not create row', insertError.message);
-      return;
-    }
-    setProfile(created ?? null);
-  }, [userId]);
-
+  // Load the profile whenever the session changes. Deferred to a microtask so
+  // no state is set synchronously inside the effect.
   useEffect(() => {
-    if (!userId || loadedProfileFor.current === userId) return;
-    loadedProfileFor.current = userId;
-    void refreshProfile();
-  }, [userId, refreshProfile]);
+    void Promise.resolve().then(refreshProfile);
+  }, [refreshProfile]);
 
   const updateProfile = useCallback(
     async (patch: UserProfileUpdate) => {
-      if (!userId) throw new Error('Not signed in.');
-
+      if (!session) throw new Error('Not signed in.');
       // Optimistic: these are toggles and chips, they should feel instant.
       setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
-
-      const { data, error } = await supabase
-        .from('users')
-        .update(patch)
-        .eq('id', userId)
-        .select()
-        .maybeSingle();
-
-      if (error) {
+      try {
+        setProfile(await api.patch<UserProfile>('/me', patch));
+      } catch (e) {
         await refreshProfile(); // put the real value back
-        throw error;
+        throw e;
       }
-      if (data) setProfile(data);
     },
-    [userId, refreshProfile],
+    [session, refreshProfile],
   );
 
   // ------------------------------------------------------------------ auth ---
-  const sendMagicLink = useCallback(async (email: string) => {
-    const address = email.trim().toLowerCase();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: address,
-      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
-    });
-    if (error) throw error;
-    setPendingEmail(address);
+  // Build the Auth0 request (discovery + PKCE + URL) BEFORE the tap. Browsers
+  // only allow the sign-in popup if it opens right after the click; any await
+  // in between (network, hashing) gets it blocked as "not user-initiated".
+  const prepared = useRef<Promise<PreparedAuth> | null>(null);
+  useEffect(() => {
+    if (AUTH0_AVAILABLE) prepared.current = prepareAuth0();
   }, []);
 
-  const verifyEmailCode = useCallback(
-    async (code: string) => {
-      if (!pendingEmail) throw new Error('Enter your email first.');
-      const { error } = await supabase.auth.verifyOtp({
-        email: pendingEmail,
-        token: code.trim(),
-        type: 'email',
-      });
-      if (error) throw error;
-      setPendingEmail(null);
-    },
-    [pendingEmail],
-  );
+  const signInWithAuth0 = useCallback(async () => {
+    if (!AUTH0_AVAILABLE) throw new Error('Auth0 is not set up yet. Use the demo account.');
+
+    const { discovery, request } = await (prepared.current ?? prepareAuth0());
+    prepared.current = prepareAuth0(); // each request is single-use: ready the next one
+
+    const result = await request.promptAsync(discovery);
+    if (result.type === 'cancel' || result.type === 'dismiss') return;
+    if (result.type !== 'success') {
+      throw new Error(result.type === 'error' ? result.error?.message ?? 'Sign-in failed.' : 'Sign-in failed.');
+    }
+
+    const tokens = await AuthSession.exchangeCodeAsync(
+      {
+        clientId: AUTH0_CLIENT_ID,
+        code: result.params.code,
+        redirectUri: AUTH0_REDIRECT_URI,
+        extraParams: { code_verifier: request.codeVerifier ?? '' },
+      },
+      discovery,
+    );
+
+    await applySession({ token: tokens.accessToken, user: claimsFromIdToken(tokens.idToken), via: 'auth0' });
+  }, [applySession]);
 
   const signInWithDemoAccount = useCallback(async () => {
-    const email = process.env.EXPO_PUBLIC_DEMO_EMAIL;
-    const password = process.env.EXPO_PUBLIC_DEMO_PASSWORD;
-    if (!email || !password) {
-      throw new Error('Set EXPO_PUBLIC_DEMO_EMAIL and EXPO_PUBLIC_DEMO_PASSWORD in .env.');
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-  }, []);
+    if (!DEMO_EMAIL) throw new Error('Set EXPO_PUBLIC_DEMO_EMAIL in .env.');
+    const { token } = await api.post<{ token: string }>('/dev/login', { email: DEMO_EMAIL });
+    await applySession({ token, user: { email: DEMO_EMAIL, name: null }, via: 'demo' });
+  }, [applySession]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setPendingEmail(null);
-  }, []);
-
-  // TODO(auth): Google sign-in. expo-web-browser is already installed; the
-  // shape is supabase.auth.signInWithOAuth({ provider: 'google', options: {
-  // redirectTo, skipBrowserRedirect: true } }) then openAuthSessionAsync with
-  // the returned url, then exchangeCodeForSession on the code it comes back
-  // with. Needs a Google OAuth client and the redirect added in Supabase.
+    await applySession(null);
+  }, [applySession]);
 
   const value = useMemo<SessionContextValue>(
     () => ({
       session,
       profile,
       initializing,
-      pendingEmail,
-      sendMagicLink,
-      verifyEmailCode,
+      signInWithAuth0,
       signInWithDemoAccount,
       signOut,
       refreshProfile,
       updateProfile,
     }),
-    [
-      session,
-      profile,
-      initializing,
-      pendingEmail,
-      sendMagicLink,
-      verifyEmailCode,
-      signInWithDemoAccount,
-      signOut,
-      refreshProfile,
-      updateProfile,
-    ],
+    [session, profile, initializing, signInWithAuth0, signInWithDemoAccount, signOut, refreshProfile, updateProfile],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -258,7 +230,3 @@ export function useSession(): SessionContextValue {
 export function useIsSignedIn(): boolean {
   return Boolean(useSession().session);
 }
-
-export const DEMO_ACCOUNT_AVAILABLE = Boolean(
-  process.env.EXPO_PUBLIC_DEMO_EMAIL && process.env.EXPO_PUBLIC_DEMO_PASSWORD,
-);

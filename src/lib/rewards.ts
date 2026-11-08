@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 import type { Reward, Venue } from './database.types';
 
 /**
@@ -9,15 +9,13 @@ import type { Reward, Venue } from './database.types';
  * into the database (so `status` can flip to 'earned' server-side) or stays
  * here as presentation. Pick one — having it in both places will drift.
  */
-export const FREQUENT_REWARD_TARGET = 10;
+export const FREQUENT_REWARD_TARGET = 5; // project doc: 5 visits = a free drink
 
 /** A check-in at the venue's chat table counts double. */
 export const CHAT_TABLE_VISIT_WEIGHT = 2;
 
 export async function fetchRewards(): Promise<Reward[]> {
-  const { data, error } = await supabase.from('rewards').select('*');
-  if (error) throw error;
-  return data ?? [];
+  return api.get<Reward[]>('/me/rewards');
 }
 
 /**
@@ -27,9 +25,7 @@ export async function fetchRewards(): Promise<Reward[]> {
  * limits `checkins` to your own rows, so this is both allowed and private.
  */
 export async function fetchVisitedVenueIds(): Promise<Set<string>> {
-  const { data, error } = await supabase.from('checkins').select('venue_id');
-  if (error) throw error;
-  return new Set((data ?? []).map((r) => r.venue_id));
+  return new Set(await api.get<string[]>('/me/visited-venues'));
 }
 
 export interface PassportEntry {

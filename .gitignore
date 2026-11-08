@@ -42,3 +42,9 @@ yarn-error.*
 
 # local env files
 .env
+
+# old Supabase credentials kept locally
+.env.*backup
+
+# Public CA certificate for Tiger Cloud (not a secret)
+!server/certs/timescale-ca.pem

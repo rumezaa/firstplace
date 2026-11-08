@@ -2,12 +2,14 @@ import '../global.css';
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider, useSession } from '@/providers/SessionProvider';
-import { Loading, Screen, SupabaseNotConfigured } from '@/components/ui';
-import { isSupabaseConfigured, supabaseConfigProblem } from '@/lib/supabase';
+import { ApiNotConfigured, Loading, Screen } from '@/components/ui';
+import { apiConfigProblem, isApiConfigured } from '@/lib/api';
 import { colors } from '@/lib/theme';
+import { HelpButton } from '@/components/HelpButton';
 
 export default function RootLayout() {
   return (
@@ -24,7 +26,7 @@ function RootNavigator() {
   const { initializing } = useSession();
 
   // A fresh clone with no .env would otherwise show a stack of network errors.
-  if (!isSupabaseConfigured) return <SupabaseNotConfigured problem={supabaseConfigProblem} />;
+  if (!isApiConfigured) return <ApiNotConfigured problem={apiConfigProblem} />;
 
   if (initializing) {
     return (
@@ -35,6 +37,7 @@ function RootNavigator() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.cream },
@@ -52,7 +55,15 @@ function RootNavigator() {
         options={{ headerShown: false, animation: 'fade' }}
       />
       <Stack.Screen name="dashboard/[venueId]" options={{ title: 'Venue dashboard' }} />
+      <Stack.Screen name="table/[id]" options={{ title: '' }} />
+      <Stack.Screen name="waiting/[requestId]" options={{ title: 'Request sent' }} />
+      <Stack.Screen name="conversation" options={{ title: 'In conversation' }} />
+      <Stack.Screen name="box/[tableId]" options={{ headerShown: false }} />
+      <Stack.Screen name="help" options={{ title: 'Help', presentation: 'modal' }} />
       <Stack.Screen name="+not-found" options={{ title: 'Not found' }} />
     </Stack>
+    {/* PRD: a Help button in the same place on every screen, signed in or not. */}
+    <HelpButton />
+    </View>
   );
 }

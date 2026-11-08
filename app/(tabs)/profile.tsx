@@ -5,7 +5,7 @@ import { RefreshControl, TextInput, View } from 'react-native';
 import { APP_NAME } from '@/lib/branding';
 import { fetchCheckinHistory } from '@/lib/checkins';
 import { relativeDay, timeOfDay } from '@/lib/format';
-import { errorMessage } from '@/lib/supabase';
+import { errorMessage } from '@/lib/api';
 import { fetchVenues } from '@/lib/venues';
 import { useAsync } from '@/hooks/useAsync';
 import { useSession } from '@/providers/SessionProvider';

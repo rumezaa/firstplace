@@ -1,16 +1,14 @@
 import { Link, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AVAILABILITY, tablesSummary } from '@/lib/availability';
 import { APP_NAME } from '@/lib/branding';
 import type { Venue, VenueLive } from '@/lib/database.types';
 import { people } from '@/lib/format';
-import { MIN_TAP_TARGET, colors } from '@/lib/theme';
+import { MIN_TAP_TARGET } from '@/lib/theme';
 import {
-  CALGARY_REGION,
   NO_FILTERS,
   activeFilterCount,
   fetchVenueLive,
@@ -21,6 +19,7 @@ import {
 import { useAsync } from '@/hooks/useAsync';
 import { useVenueTablesRealtime } from '@/hooks/useRealtime';
 import { Badge, Body, Caption, Chip, ErrorNote, Loading, SectionTitle } from '@/components/ui';
+import { VenueMap } from '@/components/VenueMap';
 
 export default function MapScreen() {
   const [filters, setFilters] = useState<VenueFilters>(NO_FILTERS);
@@ -63,28 +62,7 @@ export default function MapScreen() {
 
   return (
     <View className="bg-cream flex-1">
-      <MapView
-        style={{ flex: 1 }}
-        initialRegion={CALGARY_REGION}
-        showsUserLocation={false}
-        accessibilityLabel={`Map of ${visible.length} places in Calgary`}
-      >
-        {visible.map((venue) => {
-          const l = live[venue.id];
-          const presentation = AVAILABILITY[l?.availability ?? 'open'];
-          return (
-            <Marker
-              key={venue.id}
-              coordinate={{ latitude: venue.lat, longitude: venue.lng }}
-              pinColor={presentation.pinColor}
-              title={venue.name}
-              description={presentation.label}
-              onPress={() => setSelectedId(venue.id)}
-              accessibilityLabel={`${venue.name}. ${presentation.a11y}`}
-            />
-          );
-        })}
-      </MapView>
+      <VenueMap venues={visible} live={live} onSelect={setSelectedId} />
 
       {/* Header + filter chips float over the map so the map stays full-bleed. */}
       <SafeAreaView edges={['top']} className="absolute left-0 right-0 top-0" pointerEvents="box-none">

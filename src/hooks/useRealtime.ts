@@ -1,77 +1,64 @@
-import { useEffect } from 'react';
-
-import { supabase } from '@/lib/supabase';
+import { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 
 /**
- * Re-runs `onChange` whenever table status changes at a venue.
+ * "Realtime" by polling. The API server has no push channel, and for a table
+ * grid and an open-to-chat count a few seconds of delay is fine. Polling is
+ * also the most demo-proof option: no socket to drop, nothing to resubscribe.
  *
- * WHY ONLY `tables`: realtime respects RLS. `public.tables` is public data —
- * a row says "table 4 is taken", never who is sitting there — so it is safe to
- * broadcast. The open-to-chat count lives in the `venue_live` VIEW, and views
- * cannot be subscribed to, so the pattern is: listen on tables, then re-read
- * venue_live. Every check-in claims a table, so a table event always
- * accompanies someone arriving or leaving. See migration 0600.
- *
- * Pass venueId = null to listen across all venues (the map does this).
- *
- * TODO(realtime): this is wired up but untested against a live Supabase
- * project — nobody has run it with two devices yet. Things to check:
- *   1. Realtime is enabled for `public.tables` in the dashboard (the migration
- *      adds it to the publication, but confirm it shows up under
- *      Database > Replication).
- *   2. Debounce. Staff tapping across a kiosk grid fires one event per tile,
- *      and each one currently triggers a full re-read.
- *   3. Resubscribe after the app returns from background — the socket drops and
- *      supabase-js does not always notice.
+ * Polls only while the app is in the foreground, and fires once straight away
+ * when it comes back, so returning to the app shows fresh numbers.
  */
-export function useVenueTablesRealtime(
-  venueId: string | null,
-  onChange: () => void,
-  enabled = true,
-) {
+function usePolling(onTick: () => void, intervalMs: number, enabled: boolean) {
+  // Keep the latest callback without restarting the timer on every render.
+  const tick = useRef(onTick);
+  useEffect(() => {
+    tick.current = onTick;
+  }, [onTick]);
+
   useEffect(() => {
     if (!enabled) return;
 
-    const channel = supabase
-      .channel(venueId ? `tables:${venueId}` : 'tables:all')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tables',
-          ...(venueId ? { filter: `venue_id=eq.${venueId}` } : {}),
-        },
-        () => onChange(),
-      )
-      .subscribe();
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (!timer) timer = setInterval(() => tick.current(), intervalMs);
+    };
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+    };
+
+    start();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        tick.current();
+        start();
+      } else {
+        stop();
+      }
+    });
 
     return () => {
-      void supabase.removeChannel(channel);
+      stop();
+      sub.remove();
     };
-  }, [venueId, onChange, enabled]);
+  }, [intervalMs, enabled]);
 }
 
 /**
- * Fires when the signed-in user's own check-ins change.
- *
- * RLS limits `checkins` to `user_id = auth.uid()`, so a subscriber only ever
- * receives their OWN rows. That makes this safe, and also means it cannot be
- * used to count other people.
- *
- * TODO(realtime): same caveats as above.
+ * Re-runs `onChange` every few seconds so table status and live counts at a
+ * venue stay current. venueId is kept for call-site compatibility (the map
+ * passes null for "all venues"); the callers already re-read what they need.
  */
+export function useVenueTablesRealtime(
+  _venueId: string | null,
+  onChange: () => void,
+  enabled = true,
+) {
+  usePolling(onChange, 5_000, enabled);
+}
+
+/** Re-runs `onChange` periodically for the signed-in user's own check-ins. */
 export function useMyCheckinsRealtime(onChange: () => void, enabled = true) {
-  useEffect(() => {
-    if (!enabled) return;
-
-    const channel = supabase
-      .channel('my-checkins')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'checkins' }, () => onChange())
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [onChange, enabled]);
+  usePolling(onChange, 10_000, enabled);
 }

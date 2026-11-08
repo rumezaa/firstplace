@@ -5,6 +5,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 
 import { api, setAccessToken, setUnauthorizedHandler } from '@/lib/api';
+import {
+  AUTH0_AUDIENCE,
+  AUTH0_AVAILABLE,
+  AUTH0_CLIENT_ID,
+  AUTH0_DOMAIN,
+  AUTH0_REDIRECT_URI,
+} from '@/lib/auth0';
 import type { UserProfile, UserProfileUpdate } from '@/lib/database.types';
 
 // Lets the Auth0 browser tab hand control back to the app on web.
@@ -23,7 +30,7 @@ interface SessionContextValue {
   /** True until the stored session has been read from disk. */
   initializing: boolean;
 
-  signInWithAuth0: () => Promise<void>;
+  signInWithAuth0: () => Promise<Auth0Outcome>;
   signInWithDemoAccount: () => Promise<void>;
   signOut: () => Promise<void>;
 
@@ -35,14 +42,8 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 const STORAGE_KEY = 'firstplace.session.v1';
 
 // ----------------------------------------------------------------- Auth0 ---
-const AUTH0_DOMAIN = process.env.EXPO_PUBLIC_AUTH0_DOMAIN?.trim() ?? '';
-const AUTH0_CLIENT_ID = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID?.trim() ?? '';
-const AUTH0_AUDIENCE = process.env.EXPO_PUBLIC_AUTH0_AUDIENCE?.trim() ?? '';
-
-export const AUTH0_AVAILABLE = Boolean(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE);
-
-/** The URL Auth0 sends you back to. Add it under Allowed Callback URLs. */
-export const AUTH0_REDIRECT_URI = AuthSession.makeRedirectUri({ scheme: 'firstplace' });
+// Settings and the redirect URI live in @/lib/auth0, because getting that one
+// URI to match the Auth0 dashboard is the whole game. See docs/AUTH0.md.
 
 /** Demo safety net: the server signs you in as the seeded demo user. */
 const DEMO_EMAIL = process.env.EXPO_PUBLIC_DEMO_EMAIL?.trim() ?? '';
@@ -52,6 +53,14 @@ interface PreparedAuth {
   discovery: AuthSession.DiscoveryDocument;
   request: AuthSession.AuthRequest;
 }
+
+/**
+ * How the Auth0 trip ended. `dismissed` covers both "changed my mind" and the
+ * Auth0 error page you have to close by hand, which is what a rejected
+ * redirect URI looks like from in here: Auth0 never redirects back, so there
+ * is no error for us to read.
+ */
+export type Auth0Outcome = 'signed-in' | 'dismissed';
 
 async function prepareAuth0(): Promise<PreparedAuth> {
   const discovery = await AuthSession.fetchDiscoveryAsync(`https://${AUTH0_DOMAIN}`);
@@ -64,6 +73,18 @@ async function prepareAuth0(): Promise<PreparedAuth> {
   });
   await request.makeAuthUrlAsync(discovery); // cached on the request; promptAsync reuses it
   return { discovery, request };
+}
+
+/**
+ * Same thing, warmed up ahead of the tap. The extra `catch` is there because
+ * nobody is awaiting this yet: a failed discovery fetch (offline, wrong
+ * domain) would otherwise surface as an unhandled rejection. The real error
+ * still reaches the caller, because sign-in awaits the same promise.
+ */
+function preloadAuth0(): Promise<PreparedAuth> {
+  const pending = prepareAuth0();
+  pending.catch(() => undefined);
+  return pending;
 }
 
 /** Reads name/email out of an ID token. Display only; the server verifies tokens. */
@@ -165,17 +186,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // in between (network, hashing) gets it blocked as "not user-initiated".
   const prepared = useRef<Promise<PreparedAuth> | null>(null);
   useEffect(() => {
-    if (AUTH0_AVAILABLE) prepared.current = prepareAuth0();
+    if (AUTH0_AVAILABLE) prepared.current = preloadAuth0();
   }, []);
 
-  const signInWithAuth0 = useCallback(async () => {
+  const signInWithAuth0 = useCallback(async (): Promise<Auth0Outcome> => {
     if (!AUTH0_AVAILABLE) throw new Error('Auth0 is not set up yet. Use the demo account.');
 
     const { discovery, request } = await (prepared.current ?? prepareAuth0());
-    prepared.current = prepareAuth0(); // each request is single-use: ready the next one
+    prepared.current = preloadAuth0(); // each request is single-use: ready the next one
 
     const result = await request.promptAsync(discovery);
-    if (result.type === 'cancel' || result.type === 'dismiss') return;
+    if (result.type === 'cancel' || result.type === 'dismiss') return 'dismissed';
     if (result.type !== 'success') {
       throw new Error(result.type === 'error' ? result.error?.message ?? 'Sign-in failed.' : 'Sign-in failed.');
     }
@@ -191,6 +212,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     );
 
     await applySession({ token: tokens.accessToken, user: claimsFromIdToken(tokens.idToken), via: 'auth0' });
+    return 'signed-in';
   }, [applySession]);
 
   const signInWithDemoAccount = useCallback(async () => {

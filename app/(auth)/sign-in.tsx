@@ -4,28 +4,26 @@ import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { errorMessage } from '@/lib/api';
+import { AUTH0_AVAILABLE, AUTH0_REDIRECT_URI, auth0CallbackMismatchHelp } from '@/lib/auth0';
 import { colors } from '@/lib/theme';
 import { Wordmark } from '@/components/AppMark';
 import { LightPole } from '@/components/LightPole';
-import { Button, Caption, ErrorNote } from '@/components/ui';
-import {
-  AUTH0_AVAILABLE,
-  AUTH0_REDIRECT_URI,
-  DEMO_ACCOUNT_AVAILABLE,
-  useSession,
-} from '@/providers/SessionProvider';
+import { Body, Button, Caption, Card, ErrorNote, SectionTitle } from '@/components/ui';
+import { DEMO_ACCOUNT_AVAILABLE, useSession } from '@/providers/SessionProvider';
 
 /** Welcome (design kit v2, 2.1): logo, the lit pole, one instruction, sign in. */
 export default function SignIn() {
   const { session, signInWithAuth0, signInWithDemoAccount } = useSession();
   const [busy, setBusy] = useState<null | 'auth0' | 'demo'>(null);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   if (session) return <Redirect href="/" />;
 
-  async function run(kind: 'auth0' | 'demo', fn: () => Promise<void>) {
+  async function run(kind: 'auth0' | 'demo', fn: () => Promise<unknown>) {
     setBusy(kind);
     setError(null);
+    setNote(null);
     try {
       await fn();
     } catch (e) {
@@ -33,6 +31,15 @@ export default function SignIn() {
     } finally {
       setBusy(null);
     }
+  }
+
+  // A rejected redirect URI never comes back to us: Auth0 shows its "Callback
+  // URL mismatch" page in the browser and the person closes it, which reaches
+  // us as a plain dismissal. So when sign-in ends that way, say what to check
+  // rather than leaving the screen looking like nothing happened.
+  async function startAuth0() {
+    const outcome = await signInWithAuth0();
+    if (outcome === 'dismissed') setNote(auth0CallbackMismatchHelp());
   }
 
   return (
@@ -57,6 +64,17 @@ export default function SignIn() {
             <ErrorNote error={error} />
           </View>
         ) : null}
+        {note ? (
+          <View style={{ marginTop: 16 }}>
+            <Card className="gap-2">
+              <SectionTitle>Sign-in didn&apos;t finish</SectionTitle>
+              <Body>
+                {/* Selectable so the address can be copied straight into Auth0. */}
+                <Text selectable>{note}</Text>
+              </Body>
+            </Card>
+          </View>
+        ) : null}
       </View>
 
       <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24, gap: 8 }}>
@@ -65,7 +83,7 @@ export default function SignIn() {
             label="Get started"
             accessibilityHint="Opens a secure sign-in page. You can use Google or your email."
             busy={busy === 'auth0'}
-            onPress={() => run('auth0', signInWithAuth0)}
+            onPress={() => run('auth0', startAuth0)}
           />
         ) : null}
         {DEMO_ACCOUNT_AVAILABLE ? (
@@ -78,7 +96,9 @@ export default function SignIn() {
         ) : null}
         <Caption className="text-center">For adults 18 and over in Calgary.</Caption>
         {__DEV__ && AUTH0_AVAILABLE ? (
-          <Caption className="text-center">Dev: Auth0 callback {AUTH0_REDIRECT_URI}</Caption>
+          <Caption className="text-center">
+            <Text selectable>Dev: Auth0 callback {AUTH0_REDIRECT_URI}</Text>
+          </Caption>
         ) : null}
       </View>
     </SafeAreaView>
